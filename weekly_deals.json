@@ -1,0 +1,16 @@
+[{
+    "item": "Chicken Breast",
+    "price": 2.49,
+    "unit": "per lb",
+    "category": "protein"
+}, {
+    "item": "Broccoli",
+    "price": 1.29,
+    "unit": "per lb",
+    "category": "vegetable"
+}, {
+    "item": "Jasmine Rice",
+    "price": 5.99,
+    "unit": "per bag",
+    "category": "grain"
+}]

@@ -1,13 +1,13 @@
+import view_deals
+import search_deals
+import json
+
 def main():
     print ("Grocery Application for meal planning")
 
-    weekly_deals = [{
-        "item": "Chicken Breast", "price": 2.49, "unit": "per lb", "category": "protein"
-    }, {
-        "item": "Broccoli", "price": 1.29, "unit": "per lb", "category": "vegetable" 
-        }, {
-            "item": "Jasmine Rice", "price": 5.99, "unit": "per bag", "category": "grain"
-        }]
+    with open("weekly_deals.json", 'r', encoding='utf-8') as file:
+        weekly_deals = json.load(file)
+
     answer = ""
 
     while answer != "4":
@@ -20,19 +20,12 @@ def main():
 
         if answer == "1":
             print ("Viewing Weekly Deals...")
-            for deal in weekly_deals:
-                print (f"{deal['item']} - ${deal['price']:.2f} {deal['unit']}")
+            print (view_deals.view (weekly_deals))
         elif answer == "2":
-            found = False
             print ("Searching Deals...")
             search = input("What do you want to search for: ")
-            for deal in weekly_deals:
-                if search.upper() in deal['item'].upper():
-                    print (f"{deal['item']} - ${deal['price']:.2f} {deal['unit']}")
-                    found = True
+            print (search_deals.search(weekly_deals, search))
 
-            if not found:
-                print (f"No results for {search} found")
         elif answer == "3":
             print ("Generating Meal Plan...")
         elif answer == "4":
