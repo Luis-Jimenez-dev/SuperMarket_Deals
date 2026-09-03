@@ -1,10 +1,6 @@
 def generate(weekly_deals, recipes):
-    best_match = 0
-    best_recipe = None
-    best_missing = None
-    least_missing = 999
     recommended_recipes = []
-    deals = set ()
+    deals = set()
 
     for deal in weekly_deals:
         deals.add(deal['item'])
@@ -15,18 +11,16 @@ def generate(weekly_deals, recipes):
         missing_length = len(ingredients - deals)
         missing = (ingredients - deals)
 
-        if matches_length > 0 and ((matches_length > best_match) or (matches_length == best_match and missing_length < least_missing)): 
-            best_match = matches_length
-            best_recipe = recipe
-            best_missing = missing
-            least_missing = missing_length
         if matches_length > 0:
             recommended_recipes.append({'recipe': recipe['name'], 'matches': matches_length, 'missing': missing, 'missing_length': missing_length})
 
-    recommended_recipes.sort(key=lambda item: (item['matches'], -item ['missing_length']), reverse=True)
-    print (recommended_recipes)
+    recommended_recipes.sort(key=lambda item: (item['matches'], -item['missing_length']), reverse=True)
 
-    if best_recipe is not None:
-        return f"{best_recipe['name']} - Matches: {best_match} Missing: {len(best_missing)} \n Need to buy: " + ", ".join(best_missing)
+    if recommended_recipes:
+        output = ""
+        for index, recommendation in enumerate(recommended_recipes, start=1):
+            output += f"{index}. {recommendation['recipe']} - Matches: {recommendation['matches']} Missing: {recommendation['missing_length']} Need to buy: " + ", ".join(recommendation['missing']) + "\n" 
+
+        return output
     else:
         return "No Matching recipes found"
