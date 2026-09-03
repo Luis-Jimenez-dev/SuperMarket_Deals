@@ -1,0 +1,63 @@
+[{
+    "name": "Chicken Broccoli Rice Bowl",
+    "ingredients": [
+            "Chicken Breast", 
+            "Broccoli", 
+            "Jasmine Rice", 
+            "Soy Sauce", 
+            "Garlic"
+        ]
+}, {
+    "name": "Chicken Vegetable Stir Fry",
+    "ingredients": [
+            "Chicken Breast", 
+            "Broccoli", 
+            "Bell Pepper", 
+            "Onion", 
+            "Soy Sauce", 
+            "Garlic"
+        ]
+}, {
+    "name": "Chicken Tacos",
+    "ingredients": [
+            "Chicken Breast", 
+            "Tortillas", 
+            "Lettuce", 
+            "Tomato", 
+            "Cheese", 
+            "Salsa"
+        ]
+},     {
+        "name": "Chicken Broccoli Pasta",
+        "ingredients": [
+            "Chicken Breast",
+            "Broccoli",
+            "Pasta",
+            "Garlic",
+            "Parmesan Cheese",
+            "Olive Oil"
+        ]
+    },
+    {
+        "name": "Loaded Chicken Rice Bowl",
+        "ingredients": [
+            "Chicken Breast",
+            "Broccoli",
+            "Jasmine Rice",
+            "Bell Pepper",
+            "Onion",
+            "Garlic",
+            "Soy Sauce",
+            "Sesame Oil"
+        ]
+    },
+    {
+        "name": "Simple Chicken Broccoli Rice",
+        "ingredients": [
+            "Chicken Breast",
+            "Broccoli",
+            "Jasmine Rice",
+            "Garlic",
+            "Soy Sauce"
+        ]
+    }]

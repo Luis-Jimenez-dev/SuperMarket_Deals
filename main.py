@@ -1,5 +1,6 @@
 import view_deals
 import search_deals
+import meal_plan
 import json
 
 def main():
@@ -7,6 +8,9 @@ def main():
 
     with open("weekly_deals.json", 'r', encoding='utf-8') as file:
         weekly_deals = json.load(file)
+
+    with open ("recipes.json", 'r', encoding='utf-8') as file:
+        recipes = json.load(file)           
 
     answer = ""
 
@@ -19,15 +23,16 @@ def main():
         answer = input ("Please select an option (1-4):")
 
         if answer == "1":
-            print ("Viewing Weekly Deals...")
             print (view_deals.view (weekly_deals))
+
         elif answer == "2":
-            print ("Searching Deals...")
             search = input("What do you want to search for: ")
             print (search_deals.search(weekly_deals, search))
 
         elif answer == "3":
-            print ("Generating Meal Plan...")
+            generated = meal_plan.generate(weekly_deals, recipes)
+            print (generated)
+            
         elif answer == "4":
             print ("Exiting Application...")
         else:
