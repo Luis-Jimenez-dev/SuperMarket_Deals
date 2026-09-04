@@ -38,8 +38,12 @@ def generate(weekly_deals, recipes):
 
     if recommended_recipes:
         output = ""
-        for index, recommendation in enumerate(recommended_recipes, start=1):
-            output += f"{index}. {recommendation['recipe']} - Matches: {recommendation['matches']} Missing: {recommendation['missing_length']} Need to buy: " + ", ".join(recommendation['missing']) + f" | Deal Match: {recommendation['match_percentage']:.0f}%  \n" 
+        shopping_list = set()
+        for index, recommendation in enumerate(recommended_recipes[0:3], start=1):
+            output += f"{index}. {recommendation['recipe']} - Matches: {recommendation['matches']} Missing: {recommendation['missing_length']} Need to buy: " + ", ".join(recommendation['missing']) + f" | Deal Match: {recommendation['match_percentage']:.0f}%  \n"
+            shopping_list = (shopping_list | recommendation['missing'])
+
+        output += f"Shopping List: " + ", ".join(sorted(shopping_list)) + "\n"
 
         return output
     else:
