@@ -2,7 +2,6 @@ def generate(weekly_deals, recipes):
     recommended_recipes = []
     deals = set()
 
-
     for deal in weekly_deals:
         deals.add(deal['item'].title())
 
@@ -15,7 +14,16 @@ def generate(weekly_deals, recipes):
 
         for ingredient in ingredients:
             for deal in deals:
-                if (ingredient in deal) or (deal in ingredient):
+                ingredient_words = set(ingredient.split())
+                deals_words = set(deal.split())
+
+                matching_words = (ingredient_words & deals_words)
+                if len(matching_words) > 0:
+                    matching_percentage = len(matching_words) / len(ingredient_words)
+                else:
+                    matching_percentage = 0
+
+                if matching_percentage >= .51:
                     matches.add(ingredient)
 
 
