@@ -7,11 +7,11 @@ def generate(weekly_deals, recipes, meal_count):
         matched_deals = []
 
         for ingredient in recipe['ingredients']:
-            ingredients.add(ingredient.title())
+            ingredients.add(ingredient['name'].title())
 
-        for ingredient in ingredients:
+        for ingredient in recipe['ingredients']:
             for deal in weekly_deals:
-                ingredient_words = set(ingredient.split())
+                ingredient_words = set(ingredient['name'].title().split())
                 deals_words = set(deal['item'].title().split())
 
                 matching_words = (ingredient_words & deals_words)
@@ -21,7 +21,7 @@ def generate(weekly_deals, recipes, meal_count):
                     matching_percentage = 0
 
                 if matching_percentage >= .51:
-                    matches.add(ingredient)
+                    matches.add(ingredient['name'].title())
                     matched_deals.append({
                         'ingredient': ingredient,
                         'item': deal['item'],
@@ -55,10 +55,15 @@ def generate(weekly_deals, recipes, meal_count):
 
         for index, recommendation in enumerate(recommended_recipes[0:meal_count], start=1):
             match_list = ""
+            total_cost = 0
             for match in recommendation['matched_deals']:
-                match_list += (f"{match['item']} -> ${match['price']:.2f} {match['unit']} | ")
+                ingredient_cost = match['ingredient']['quantity'] * match['price']
+                total_cost += ingredient_cost
+                match_list += (f"{match['item']} -> ${match['price']:.2f} {match['unit']} x {match['ingredient']['quantity']} {match['ingredient']['unit']} = ${ingredient_cost:.2f} | ")
+                
 
-            output += f"{index}. {recommendation['recipe']} - Matches: {recommendation['matches']} {match_list} Missing: {recommendation['missing_length']} Need to buy: " + ", ".join(recommendation['missing']) + f" | Deal Match: {recommendation['match_percentage']:.0f}%  \n"
+            output += f"{index}. {recommendation['recipe']} - Matches: {recommendation['matches']} {match_list} Missing: {recommendation['missing_length']}  Matched Deal Cost: ${total_cost:.2f} | Deal Match: {recommendation['match_percentage']:.0f}% \n"
+            output += " Need to buy: " + ", ".join(recommendation['missing']) 
             shopping_list = (shopping_list | recommendation['missing'])
 
         output += f"Shopping List: " + ", ".join(sorted(shopping_list)) + "\n"

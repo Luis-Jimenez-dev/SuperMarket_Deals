@@ -1,63 +1,212 @@
-[{
-    "name": "Chicken Broccoli Rice Bowl",
-    "ingredients": [
-            "Chicken Breast", 
-            "Broccoli", 
-            "Jasmine Rice", 
-            "Soy Sauce", 
-            "Garlic"
+[
+    {
+        "name": "Chicken Broccoli Rice Bowl",
+        "ingredients": [
+            {
+                "name": "Chicken Breast",
+                "quantity": 1.5,
+                "unit": "lb"
+            },
+            {
+                "name": "Broccoli",
+                "quantity": 1.0,
+                "unit": "lb"
+            },
+            {
+                "name": "Jasmine Rice",
+                "quantity": 1.0,
+                "unit": "bag"
+            },
+            {
+                "name": "Soy Sauce",
+                "quantity": 2.0,
+                "unit": "tbsp"
+            },
+            {
+                "name": "Garlic",
+                "quantity": 2.0,
+                "unit": "cloves"
+            }
         ]
-}, {
-    "name": "Chicken Vegetable Stir Fry",
-    "ingredients": [
-            "Chicken Breast", 
-            "Broccoli", 
-            "Bell Pepper", 
-            "Onion", 
-            "Soy Sauce", 
-            "Garlic"
+    },
+    {
+        "name": "Chicken Vegetable Stir Fry",
+        "ingredients": [
+            {
+                "name": "Chicken Breast",
+                "quantity": 1.5,
+                "unit": "lb"
+            },
+            {
+                "name": "Broccoli",
+                "quantity": 0.5,
+                "unit": "lb"
+            },
+            {
+                "name": "Bell Pepper",
+                "quantity": 1.0,
+                "unit": "each"
+            },
+            {
+                "name": "Onion",
+                "quantity": 1.0,
+                "unit": "each"
+            },
+            {
+                "name": "Soy Sauce",
+                "quantity": 3.0,
+                "unit": "tbsp"
+            },
+            {
+                "name": "Garlic",
+                "quantity": 2.0,
+                "unit": "cloves"
+            }
         ]
-}, {
-    "name": "Chicken Tacos",
-    "ingredients": [
-            "Chicken Breast", 
-            "Tortillas", 
-            "Lettuce", 
-            "Tomato", 
-            "Cheese", 
-            "Salsa"
+    },
+    {
+        "name": "Chicken Tacos",
+        "ingredients": [
+            {
+                "name": "Chicken Breast",
+                "quantity": 1.5,
+                "unit": "lb"
+            },
+            {
+                "name": "Tortillas",
+                "quantity": 8.0,
+                "unit": "each"
+            },
+            {
+                "name": "Lettuce",
+                "quantity": 1.0,
+                "unit": "head"
+            },
+            {
+                "name": "Tomato",
+                "quantity": 2.0,
+                "unit": "each"
+            },
+            {
+                "name": "Cheese",
+                "quantity": 1.0,
+                "unit": "bag"
+            },
+            {
+                "name": "Salsa",
+                "quantity": 1.0,
+                "unit": "jar"
+            }
         ]
-},     {
+    },
+    {
         "name": "Chicken Broccoli Pasta",
         "ingredients": [
-            "Chicken Breast",
-            "Broccoli",
-            "Pasta",
-            "Garlic",
-            "Parmesan Cheese",
-            "Olive Oil"
+            {
+                "name": "Chicken Breast",
+                "quantity": 1.5,
+                "unit": "lb"
+            },
+            {
+                "name": "Broccoli",
+                "quantity": 1.0,
+                "unit": "lb"
+            },
+            {
+                "name": "Pasta",
+                "quantity": 1.0,
+                "unit": "box"
+            },
+            {
+                "name": "Garlic",
+                "quantity": 2.0,
+                "unit": "cloves"
+            },
+            {
+                "name": "Parmesan Cheese",
+                "quantity": 0.5,
+                "unit": "cup"
+            },
+            {
+                "name": "Olive Oil",
+                "quantity": 2.0,
+                "unit": "tbsp"
+            }
         ]
     },
     {
         "name": "Loaded Chicken Rice Bowl",
         "ingredients": [
-            "Chicken Breast",
-            "Broccoli",
-            "Jasmine Rice",
-            "Bell Pepper",
-            "Onion",
-            "Garlic",
-            "Soy Sauce",
-            "Sesame Oil"
+            {
+                "name": "Chicken Breast",
+                "quantity": 1.5,
+                "unit": "lb"
+            },
+            {
+                "name": "Broccoli",
+                "quantity": 1.0,
+                "unit": "lb"
+            },
+            {
+                "name": "Jasmine Rice",
+                "quantity": 1.0,
+                "unit": "bag"
+            },
+            {
+                "name": "Bell Pepper",
+                "quantity": 1.0,
+                "unit": "each"
+            },
+            {
+                "name": "Onion",
+                "quantity": 1.0,
+                "unit": "each"
+            },
+            {
+                "name": "Garlic",
+                "quantity": 2.0,
+                "unit": "cloves"
+            },
+            {
+                "name": "Soy Sauce",
+                "quantity": 3.0,
+                "unit": "tbsp"
+            },
+            {
+                "name": "Sesame Oil",
+                "quantity": 1.0,
+                "unit": "tbsp"
+            }
         ]
     },
     {
         "name": "Simple Chicken Broccoli Rice",
         "ingredients": [
-            "Chicken Breast",
-            "Broccoli",
-            "Jasmine Rice",
-            "Garlic",
-            "Soy Sauce"
+            {
+                "name": "Chicken Breast",
+                "quantity": 1.5,
+                "unit": "lb"
+            },
+            {
+                "name": "Broccoli",
+                "quantity": 1.0,
+                "unit": "lb"
+            },
+            {
+                "name": "Jasmine Rice",
+                "quantity": 1.0,
+                "unit": "bag"
+            },
+            {
+                "name": "Garlic",
+                "quantity": 2.0,
+                "unit": "cloves"
+            },
+            {
+                "name": "Soy Sauce",
+                "quantity": 2.0,
+                "unit": "tbsp"
+            }
         ]
-    }]
+    }
+]
