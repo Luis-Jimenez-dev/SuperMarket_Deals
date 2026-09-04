@@ -2,24 +2,36 @@ def generate(weekly_deals, recipes):
     recommended_recipes = []
     deals = set()
 
+
     for deal in weekly_deals:
-        deals.add(deal['item'])
+        deals.add(deal['item'].title())
 
     for recipe in recipes:
-        ingredients = set (recipe['ingredients'])
-        matches_length = len(deals & ingredients)
-        missing_length = len(ingredients - deals)
-        missing = (ingredients - deals)
+        ingredients = set ()
+        matches = set ()
+
+        for ingredient in recipe['ingredients']:
+            ingredients.add(ingredient.title())
+
+        for ingredient in ingredients:
+            for deal in deals:
+                if (ingredient in deal) or (deal in ingredient):
+                    matches.add(ingredient)
+
+
+        matches_length = len(matches)
+        missing = (ingredients - matches)
+        match_percentage = (matches_length / len(ingredients)) * 100
 
         if matches_length > 0:
-            recommended_recipes.append({'recipe': recipe['name'], 'matches': matches_length, 'missing': missing, 'missing_length': missing_length})
+            recommended_recipes.append({'recipe': recipe['name'], 'matches': matches_length, 'missing': missing, 'missing_length': len(missing), 'match_percentage': match_percentage})
 
     recommended_recipes.sort(key=lambda item: (item['matches'], -item['missing_length']), reverse=True)
 
     if recommended_recipes:
         output = ""
         for index, recommendation in enumerate(recommended_recipes, start=1):
-            output += f"{index}. {recommendation['recipe']} - Matches: {recommendation['matches']} Missing: {recommendation['missing_length']} Need to buy: " + ", ".join(recommendation['missing']) + "\n" 
+            output += f"{index}. {recommendation['recipe']} - Matches: {recommendation['matches']} Missing: {recommendation['missing_length']} Need to buy: " + ", ".join(recommendation['missing']) + f" | Deal Match: {recommendation['match_percentage']:.0f}%  \n" 
 
         return output
     else:
