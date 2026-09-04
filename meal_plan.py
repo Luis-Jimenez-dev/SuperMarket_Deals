@@ -1,4 +1,4 @@
-def generate(weekly_deals, recipes):
+def generate(weekly_deals, recipes, meal_count):
     recommended_recipes = []
     deals = set()
 
@@ -36,14 +36,22 @@ def generate(weekly_deals, recipes):
 
     recommended_recipes.sort(key=lambda item: (item['matches'], -item['missing_length']), reverse=True)
 
+
     if recommended_recipes:
         output = ""
+        resize = None
         shopping_list = set()
-        for index, recommendation in enumerate(recommended_recipes[0:3], start=1):
+        if len(recommended_recipes) < meal_count:
+            resize = "Not enough recipes. Outputting all recipes: \n"
+
+        for index, recommendation in enumerate(recommended_recipes[0:meal_count], start=1):
             output += f"{index}. {recommendation['recipe']} - Matches: {recommendation['matches']} Missing: {recommendation['missing_length']} Need to buy: " + ", ".join(recommendation['missing']) + f" | Deal Match: {recommendation['match_percentage']:.0f}%  \n"
             shopping_list = (shopping_list | recommendation['missing'])
 
         output += f"Shopping List: " + ", ".join(sorted(shopping_list)) + "\n"
+
+        if resize is not None:
+            output = resize + output
 
         return output
     else:

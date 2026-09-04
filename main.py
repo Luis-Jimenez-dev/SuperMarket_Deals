@@ -30,9 +30,19 @@ def main():
             print (search_deals.search(weekly_deals, search))
 
         elif answer == "3":
-            generated = meal_plan.generate(weekly_deals, recipes)
-            print (generated)
-            
+            while True:
+                try:
+                    meal_count = int(input("How many meals would you like to generate: "))
+                    if (meal_count <= 0):
+                        print ("Enter a value greater than 0")
+                        continue
+                    
+                    generated = meal_plan.generate(weekly_deals, recipes, meal_count)
+                    print (generated)
+                    break
+                except ValueError:
+                    print("Please enter a number")
+
         elif answer == "4":
             print ("Exiting Application...")
         else:
