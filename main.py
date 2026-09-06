@@ -1,16 +1,21 @@
 import view_deals
 import search_deals
 import meal_plan
+import store_search
 import json
 
 def main():
     print ("Grocery Application for meal planning")
 
-    with open("weekly_deals.json", 'r', encoding='utf-8') as file:
-        weekly_deals = json.load(file)
-
     with open ("recipes.json", 'r', encoding='utf-8') as file:
-        recipes = json.load(file)           
+        recipes = json.load(file)      
+
+    while True:
+        search = input("Search for a store: ")
+        weekly_deals = store_search.search(search)
+        if weekly_deals is not None:
+            break
+        print ("Store not Found. Try again")
 
     answer = ""
 

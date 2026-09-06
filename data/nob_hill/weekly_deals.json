@@ -1,0 +1,50 @@
+[
+    {
+        "item": "Boneless Chicken Breast",
+        "price": 2.29,
+        "unit": "per lb",
+        "category": "protein"
+    },
+    {
+        "item": "Ground Beef",
+        "price": 4.49,
+        "unit": "per lb",
+        "category": "protein"
+    },
+    {
+        "item": "Broccoli",
+        "price": 0.99,
+        "unit": "per lb",
+        "category": "vegetable"
+    },
+    {
+        "item": "Bell Pepper",
+        "price": 1.49,
+        "unit": "each",
+        "category": "vegetable"
+    },
+    {
+        "item": "Yellow Onion",
+        "price": 0.89,
+        "unit": "per lb",
+        "category": "vegetable"
+    },
+    {
+        "item": "Jasmine Rice",
+        "price": 5.49,
+        "unit": "per bag",
+        "category": "grain"
+    },
+    {
+        "item": "Pasta",
+        "price": 1.79,
+        "unit": "per box",
+        "category": "grain"
+    },
+    {
+        "item": "Shredded Cheese",
+        "price": 3.49,
+        "unit": "per bag",
+        "category": "dairy"
+    }
+]

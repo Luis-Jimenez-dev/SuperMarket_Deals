@@ -1,0 +1,50 @@
+[
+    {
+        "item": "Chicken Breast",
+        "price": 1.79,
+        "unit": "per lb",
+        "category": "protein"
+    },
+    {
+        "item": "Ground Beef",
+        "price": 3.99,
+        "unit": "per lb",
+        "category": "protein"
+    },
+    {
+        "item": "Broccoli",
+        "price": 1.49,
+        "unit": "per lb",
+        "category": "vegetable"
+    },
+    {
+        "item": "Bell Pepper",
+        "price": 0.99,
+        "unit": "each",
+        "category": "vegetable"
+    },
+    {
+        "item": "Tomato",
+        "price": 0.79,
+        "unit": "each",
+        "category": "vegetable"
+    },
+    {
+        "item": "Jasmine Rice",
+        "price": 4.49,
+        "unit": "per bag",
+        "category": "grain"
+    },
+    {
+        "item": "Tortillas",
+        "price": 2.49,
+        "unit": "per bag",
+        "category": "grain"
+    },
+    {
+        "item": "Salsa",
+        "price": 2.99,
+        "unit": "per jar",
+        "category": "condiment"
+    }
+]
