@@ -2,6 +2,7 @@ import view_deals
 import search_deals
 import meal_plan
 import store_search
+import database
 import json
 
 def main():
@@ -12,8 +13,8 @@ def main():
 
     while True:
         search = input("Search for a store: ")
-        weekly_deals = store_search.search(search)
-        if weekly_deals is not None:
+        weekly_deals = database.get_deals(search)
+        if weekly_deals:
             break
         print ("Store not Found. Try again")
 
