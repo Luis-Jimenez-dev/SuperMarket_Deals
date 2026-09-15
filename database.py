@@ -3,11 +3,12 @@ from psycopg.rows import dict_row
 import os
 
 conn = psycopg.connect(
-    dbname = "grocery_app",
-    user = "postgres",
-    password = os.getenv("GROCERY_DB_PASSWORD"),
-    host = "localhost",
-    port = 5432
+    dbname = os.getenv("DB_NAME"),
+    user = os.getenv("DB_USER"),
+    password = os.getenv("DB_PASSWORD"),
+    host = os.getenv("DB_HOST"),
+    port = os.getenv("DB_PORT"),
+    sslmode = "require"
 )
 
 cur = conn.cursor(row_factory=dict_row)

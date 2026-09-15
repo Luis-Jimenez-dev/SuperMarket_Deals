@@ -1,41 +1,38 @@
 import json
 import database
+import store_search
 
-with open ("data/nob_hill/weekly_deals.json", 'r', encoding='utf-8') as file:
-    deals = json.load(file)
+def import_deals():
+    store_name = input ("Input Store Name: ")
+    deals = store_search.search(store_name)
 
-database.cur.execute(
-    """
-    INSERT INTO weekly_ads (store_id, start_date, end_date)
-    VALUES (%s, %s, %s)
-    """,
-    (3, '2026-09-09', '2026-09-15'),
-)
+    if deals is None:
+        print ("No deals found for this store.")
+        return
 
-database.conn.commit()
+    database.cur.execute(
+        """
+        SELECT weekly_ads.id FROM weekly_ads JOIN stores ON weekly_ads.store_id = stores.id WHERE stores.name ILIKE %s
+        """,
+        (f"%{store_name}%",)
+    )
 
-# store_name = "Nob Hill"
+    weekly_ad_id = database.cur.fetchone()
+    weekly_ad_id = weekly_ad_id['id']
 
-# database.cur.execute(
-#     """
-#     SELECT weekly_ads.id FROM weekly_ads JOIN stores ON weekly_ads.store_id = stores.id WHERE stores.name ILIKE %s
-#     """,
-#     (store_name,)
-# )
+    print (weekly_ad_id)
 
-# weekly_ad_id = database.cur.fetchone()
-# weekly_ad_id = weekly_ad_id['id']
+    for deal in deals:
+        database.cur.execute (
+            """
+            INSERT INTO deal_items (weekly_ad_id, item, unit, category, price)
+            VALUES (%s, %s, %s, %s, %s)
+            ON CONFLICT DO NOTHING
+            """,
+            (weekly_ad_id, deal['item'], deal['unit'], deal['category'], deal ['price'])
+        )
 
-# print (weekly_ad_id)
+    database.conn.commit()
 
-# for deal in deals:
-#     database.cur.execute (
-#         """
-#         INSERT INTO deal_items (weekly_ad_id, item, unit, category, price)
-#         VALUES (%s, %s, %s, %s, %s)
-#         ON CONFLICT DO NOTHING
-#         """,
-#         (weekly_ad_id, deal['item'], deal['unit'], deal['category'], deal ['price'])
-#     )
-
-# database.conn.commit()
+# if __name__ == "__main__":
+#     import_deals()

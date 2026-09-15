@@ -7,7 +7,7 @@ def search(answer):
     deals = None
 
     for item in data_folder.iterdir():
-        if answer.lower() in item.name.lower():
+        if answer.lower().replace(" ", "_").replace(".", "") in item.name.lower():
             item = item/'weekly_deals.json'
             with open(item, 'r', encoding='utf-8') as file:
                 deals = json.load(file)
