@@ -1,3 +1,5 @@
+import json
+
 def generate(weekly_deals, recipes, meal_count):
     recommended_recipes = []
 
@@ -51,7 +53,7 @@ def generate(weekly_deals, recipes, meal_count):
             recommended_recipes.append({
                 'recipe': recipe['name'], 
                 'matches': matches_length, 
-                'missing': missing, 
+                'missing': list(missing), 
                 'missing_length': len(missing), 
                 'match_percentage': match_percentage,
                 'matched_deals': matched_deals,
@@ -106,3 +108,9 @@ def generate(weekly_deals, recipes, meal_count):
         return output
     else:
         return "No Matching recipes found"
+    
+def load_recipes():
+    with open("recipes.json", "r", encoding="utf-8") as file:
+        recipes = json.load(file)
+
+    return recipes

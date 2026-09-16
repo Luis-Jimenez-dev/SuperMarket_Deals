@@ -8,8 +8,7 @@ import json
 def main():
     print ("Grocery Application for meal planning")
 
-    with open ("recipes.json", 'r', encoding='utf-8') as file:
-        recipes = json.load(file)      
+    recipes = meal_plan.load_recipes()    
 
     while True:
         search = input("Search for a store: ")
@@ -33,7 +32,9 @@ def main():
 
         elif answer == "2":
             search = input("What do you want to search for: ")
-            print (search_deals.search(weekly_deals, search))
+            results = search_deals.search(weekly_deals, search)
+            for result in results:
+                print (f"{result['item']} - ${result['price']:.2f} {result['unit']}")
 
         elif answer == "3":
             while True:

@@ -1,6 +1,9 @@
 import psycopg
 from psycopg.rows import dict_row
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 conn = psycopg.connect(
     dbname = os.getenv("DB_NAME"),
