@@ -63,13 +63,15 @@ def main():
                         print("Enter a value greater than 0")
                         continue
 
-                    generated = meal_plan.generate(
+                    meal_data = meal_plan.generate(
                         weekly_deals,
                         recipes,
                         meal_count
                     )
 
-                    print(generated)
+                    formatted_data = meal_plan.format_meal_plan(meal_data)
+
+                    print(formatted_data)
                     break
 
                 # Handle input that cannot be converted to an integer
