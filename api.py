@@ -1,6 +1,7 @@
 # FastAPI routes for accessing grocery deals and meal planning features
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 import database
 import search_deals
@@ -9,6 +10,16 @@ import meal_plan
 
 # Create the FastAPI application
 app = FastAPI()
+origins = [
+    "http://localhost:5173"
+]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins = origins,
+    allow_credentials = True,
+    allow_methods = ["*"],
+    allow_headers = ["*"]
+)
 
 
 # Basic route to check that the API is running
@@ -41,3 +52,7 @@ def generate_meal_plan(store_name: str, meals: int):
     recipes = meal_plan.load_recipes()
 
     return meal_plan.generate(weekly_deals, recipes, meals)
+
+@app.get("/stores")
+def get_stores():
+    return database.get_stores()

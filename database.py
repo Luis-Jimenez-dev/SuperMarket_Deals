@@ -44,3 +44,8 @@ def get_deals(store_name):
         deal['price'] = float(deal['price'])
 
     return deal_items
+
+def get_stores():
+    cur.execute("SELECT name, id FROM stores")
+    stores = cur.fetchall()
+    return stores
