@@ -46,6 +46,10 @@ def get_deals(store_name):
     return deal_items
 
 def get_stores():
-    cur.execute("SELECT name, id FROM stores")
+    cur.execute(
+        """
+        SELECT name, id, merchant_store_code, city, state, postal_code
+        FROM stores
+        """)
     stores = cur.fetchall()
     return stores
