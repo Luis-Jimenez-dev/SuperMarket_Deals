@@ -1,12 +1,18 @@
 import json
 import re
+import import_deals
 
 with open ('data/safeway_sample.json', 'r', encoding='utf-8') as file:
     data = json.load(file)
 
+# Used for a single deal
 def normalize_deal(raw_deal):
     price = get_price(raw_deal)
-    category = get_category(raw_deal)
+    category_path = get_category(raw_deal)
+    if category_path:
+        category = category_path[-1]
+    else:
+        category = None
 
     package_info = get_package_info(raw_deal.get('description')) or {}
 
@@ -21,6 +27,7 @@ def normalize_deal(raw_deal):
         'price': price,
         'promotion': raw_deal['post_price_text'],
         'category': category,
+        'category_path': category_path,
         'description': raw_deal['description'],
         'amount': amount,
         'min_amount': min_amount,
@@ -29,18 +36,20 @@ def normalize_deal(raw_deal):
         'unit': unit
     }
 
+
+
     return deal
 
 def get_category(raw_deal):
     categories = raw_deal.get('item_categories', {})
 
-    category = None
+    category_path = []
 
     for level in categories.values():
         if level is not None and level.get('category_name') is not None:
-            category = level['category_name']
+            category_path.append(level['category_name'])
 
-    return category
+    return category_path
 
 def get_price(raw_deal):
     try:
@@ -82,40 +91,43 @@ def get_package_info(description):
         return {'min_amount': float(range_match.group(1)), 'max_amount': float(range_match.group(2)), 'unit': range_match.group(3)}
     elif match and is_valid_unit(match.group(2)):
         return {'amount': float(match.group(1)), 'unit': match.group(2)}
-total = 0
-with_price = 0
-with_category = 0
-without_category = 0
-without_price = 0
 
 
-for raw_deal in data:
-    price = get_price(raw_deal)
-    category = get_category(raw_deal)
-    description = raw_deal.get('description')
-
-    total += 1
-    if price is None:
-        without_price += 1
+def is_usable_deal(deal):
+    if deal.get('price') is None:
+        return False
     else:
-        with_price += 1
+        return True
 
-    if category is None:
-        without_category += 1
-    else:
-        with_category += 1
+def is_food_deal(deal):
+    category_path = deal.get('category_path', [])
 
-    if description is not None:
+    if 'Food Items' in category_path:
+        return True
+
+    return False
+
+def normalize_many_deals(raw_deals):
+    usable_deals = []
+    food_deals = []
+    other_deals = []
+
+    for raw_deal in raw_deals:
         normalized_deal = normalize_deal(raw_deal)
-        print(normalized_deal)
+        if is_usable_deal(normalized_deal):
+            usable_deals.append(normalized_deal)
+            if is_food_deal(normalized_deal):
+                food_deals.append(normalized_deal)
+            else:
+                other_deals.append(normalized_deal)
 
-print (
-f"""
-Total: {total}
-With price: {with_price}
-Without price: {without_price}
-With Category: {with_category}
-Without Category: {without_category}
-"""
-)
-# get_package_info(raw_deal)
+    return ({
+        'Usable Deals': usable_deals,
+        'Food Deals': food_deals,
+        'Other Deals': other_deals
+    })
+
+results = normalize_many_deals(data)
+food_deals = results['Food Deals']
+
+import_deals.import_deals(food_deals, '2026-09-16', '2026-09-22')

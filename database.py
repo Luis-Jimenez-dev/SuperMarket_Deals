@@ -27,14 +27,31 @@ cur = conn.cursor(row_factory=dict_row)
 # Get the weekly deals for the selected store
 def get_deals(store_name):
     cur.execute(
+    """
+    SELECT weekly_ads.id
+    FROM weekly_ads
+    JOIN stores ON weekly_ads.store_id = stores.id
+    WHERE stores.name ILIKE %s
+    ORDER BY weekly_ads.start_date DESC
+    LIMIT 1
+    """,
+    (f"%{store_name}%",)
+    )
+
+    weekly_ad = cur.fetchone()
+    if weekly_ad is None:
+        return []
+
+    weekly_ad_id = weekly_ad['id']
+
+    cur.execute(
         """
-        SELECT deal_items.item, deal_items.price, deal_items.unit, deal_items.category
+        SELECT item, price, unit, category, promotion, description, amount, min_amount,
+        max_amount, package_count
         FROM deal_items
-        JOIN weekly_ads ON deal_items.weekly_ad_id = weekly_ads.id
-        JOIN stores ON weekly_ads.store_id = stores.id
-        WHERE name ILIKE %s
+        WHERE deal_items.weekly_ad_id = %s
         """,
-        (store_name,)
+        (weekly_ad_id,)
     )
 
     deal_items = cur.fetchall()

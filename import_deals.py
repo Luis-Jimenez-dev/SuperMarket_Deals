@@ -6,11 +6,8 @@ import store_search
 
 
 # Find a store's deals and add them to its weekly ad in the database
-def import_deals():
+def import_deals(deals, start_date, end_date):
     store_name = input("Input Store Name: ")
-
-    # Search the local store data for the requested store
-    deals = store_search.search(store_name)
 
     if deals is None:
         print("No deals found for this store.")
@@ -23,12 +20,22 @@ def import_deals():
         FROM weekly_ads
         JOIN stores ON weekly_ads.store_id = stores.id
         WHERE stores.name ILIKE %s
+        AND weekly_ads.start_date = %s
+        AND weekly_ads.end_date = %s
         """,
-        (f"%{store_name}%",)
+        (
+        f"%{store_name}%",
+        start_date,
+        end_date
+        )
     )
 
-    weekly_ad_id = database.cur.fetchone()
-    weekly_ad_id = weekly_ad_id['id']
+    weekly_ad = database.cur.fetchone()
+
+    if weekly_ad is None:
+        print ("Weekly ad not found")
+        return
+    weekly_ad_id = weekly_ad['id']
 
     print(weekly_ad_id)
 
@@ -36,8 +43,10 @@ def import_deals():
     for deal in deals:
         database.cur.execute(
             """
-            INSERT INTO deal_items (weekly_ad_id, item, unit, category, price)
-            VALUES (%s, %s, %s, %s, %s)
+            INSERT INTO deal_items 
+            (weekly_ad_id, item, unit, category, price, 
+            promotion, description, amount, min_amount, max_amount, package_count)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s ,%s, %s)
             ON CONFLICT DO NOTHING
             """,
             (
@@ -45,7 +54,13 @@ def import_deals():
                 deal['item'],
                 deal['unit'],
                 deal['category'],
-                deal['price']
+                deal['price'],
+                deal['promotion'],
+                deal['description'],
+                deal['amount'],
+                deal['min_amount'],
+                deal['max_amount'],
+                deal['package_count']   
             )
         )
 
