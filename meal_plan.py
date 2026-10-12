@@ -1,6 +1,15 @@
 # Handles recipe matching, meal plan generation, and recipe loading
-
 import json
+import spacy
+
+nlp = spacy.load('en_core_web_sm')
+
+def load_category_map():
+    with open("category_map.json", "r", encoding="utf-8") as file:
+        category_map = json.load(file)
+    return category_map
+
+category_map = load_category_map()
 
 # Load recipe data from the local JSON file
 def load_recipes():
@@ -8,6 +17,27 @@ def load_recipes():
         recipes = json.load(file)
 
     return recipes
+
+def match_ingredient(ingredient_name, deal_name):
+    ingredient_doc = nlp(ingredient_name.lower())
+    deal_doc = nlp(deal_name.lower())
+
+    ingredient_words = {token.lemma_ for token in ingredient_doc}
+    deal_words = {token.lemma_ for token in deal_doc}
+
+    matching_words = ingredient_words & deal_words
+    matching_percentage = len(matching_words) / len(ingredient_words)
+
+    return matching_percentage >= .51
+
+def match_category(ingredient_category, deal_category_path):
+    allowed_categories = category_map.get(ingredient_category, set())
+
+    for category in deal_category_path:
+        if category in allowed_categories:
+            return True
+        
+    return False
 
 # Generate structured meal recommendations from weekly grocery deals
 def generate(weekly_deals, recipes, meal_count):
@@ -49,16 +79,21 @@ def generate(weekly_deals, recipes, meal_count):
                     matching_percentage = 0
 
                 # Require more than half of the ingredient words to match
-                if matching_percentage >= .51:
+                if match_ingredient(ingredient['name'], deal['item']):
 
                     # Only use deals with a compatible unit
-                    if ingredient['unit'] in deal['unit']:
-
+                    if deal['unit'] is not None and ingredient['unit'] in deal['unit']:
                         # Keep the cheapest valid deal found
                         if best_deal is None:
                             best_deal = deal
                         elif best_deal['price'] > deal['price']:
                             best_deal = deal
+                    elif deal['promotion'] is not None and ingredient['unit'] in deal['promotion']:
+                        if best_deal is None:
+                            best_deal = deal
+                        elif best_deal['price'] > deal['price']:
+                            best_deal = deal
+
 
             # Save the ingredient and deal when a valid match was found
             if best_deal is not None:

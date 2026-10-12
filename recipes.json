@@ -5,27 +5,32 @@
             {
                 "name": "Chicken Breast",
                 "quantity": 1.5,
-                "unit": "lb"
+                "unit": "lb",
+                "category": "poultry"
             },
             {
                 "name": "Broccoli",
                 "quantity": 1.0,
-                "unit": "lb"
+                "unit": "lb",
+                "category": "vegetable"
             },
             {
                 "name": "Jasmine Rice",
                 "quantity": 1.0,
-                "unit": "bag"
+                "unit": "bag",
+                "category": "grains"
             },
             {
                 "name": "Soy Sauce",
                 "quantity": 2.0,
-                "unit": "tbsp"
+                "unit": "tbsp",
+                "category": "sauces"
             },
             {
                 "name": "Garlic",
                 "quantity": 2.0,
-                "unit": "cloves"
+                "unit": "cloves",
+                "category": "vegetable"
             }
         ]
     },
@@ -35,32 +40,38 @@
             {
                 "name": "Chicken Breast",
                 "quantity": 1.5,
-                "unit": "lb"
+                "unit": "lb",
+                "category": "poultry"
             },
             {
                 "name": "Broccoli",
                 "quantity": 0.5,
-                "unit": "lb"
+                "unit": "lb",
+                "category": "vegetable"
             },
             {
                 "name": "Bell Pepper",
                 "quantity": 1.0,
-                "unit": "each"
+                "unit": "each",
+                "category": "vegetable"
             },
             {
                 "name": "Onion",
                 "quantity": 1.0,
-                "unit": "each"
+                "unit": "each",
+                "category": "vegetable"
             },
             {
                 "name": "Soy Sauce",
                 "quantity": 3.0,
-                "unit": "tbsp"
+                "unit": "tbsp",
+                "category": "sauces"
             },
             {
                 "name": "Garlic",
                 "quantity": 2.0,
-                "unit": "cloves"
+                "unit": "cloves",
+                "category": "vegetable"
             }
         ]
     },
@@ -70,32 +81,38 @@
             {
                 "name": "Chicken Breast",
                 "quantity": 1.5,
-                "unit": "lb"
+                "unit": "lb",
+                "category": "poultry"
             },
             {
                 "name": "Tortillas",
                 "quantity": 8.0,
-                "unit": "each"
+                "unit": "each",
+                "category": "grains"
             },
             {
                 "name": "Lettuce",
                 "quantity": 1.0,
-                "unit": "head"
+                "unit": "head",
+                "category": "vegetable"
             },
             {
                 "name": "Tomato",
                 "quantity": 2.0,
-                "unit": "each"
+                "unit": "each",
+                "category": "vegetable"
             },
             {
                 "name": "Cheese",
                 "quantity": 1.0,
-                "unit": "bag"
+                "unit": "bag",
+                "category": "dairy"
             },
             {
                 "name": "Salsa",
                 "quantity": 1.0,
-                "unit": "jar"
+                "unit": "jar",
+                "category": "sauces"
             }
         ]
     },
@@ -105,32 +122,38 @@
             {
                 "name": "Chicken Breast",
                 "quantity": 1.5,
-                "unit": "lb"
+                "unit": "lb",
+                "category": "poultry"
             },
             {
                 "name": "Broccoli",
                 "quantity": 1.0,
-                "unit": "lb"
+                "unit": "lb",
+                "category": "vegetable"
             },
             {
                 "name": "Pasta",
                 "quantity": 1.0,
-                "unit": "box"
+                "unit": "box",
+                "category": "grains"
             },
             {
                 "name": "Garlic",
                 "quantity": 2.0,
-                "unit": "cloves"
+                "unit": "cloves",
+                "category": "vegetable"
             },
             {
                 "name": "Parmesan Cheese",
                 "quantity": 0.5,
-                "unit": "cup"
+                "unit": "cup",
+                "category": "dairy"
             },
             {
                 "name": "Olive Oil",
                 "quantity": 2.0,
-                "unit": "tbsp"
+                "unit": "tbsp",
+                "category": "oils"
             }
         ]
     },
@@ -140,42 +163,50 @@
             {
                 "name": "Chicken Breast",
                 "quantity": 1.5,
-                "unit": "lb"
+                "unit": "lb",
+                "category": "poultry"
             },
             {
                 "name": "Broccoli",
                 "quantity": 1.0,
-                "unit": "lb"
+                "unit": "lb",
+                "category": "vegetable"
             },
             {
                 "name": "Jasmine Rice",
                 "quantity": 1.0,
-                "unit": "bag"
+                "unit": "bag",
+                "category": "grains"
             },
             {
                 "name": "Bell Pepper",
                 "quantity": 1.0,
-                "unit": "each"
+                "unit": "each",
+                "category": "vegetable"
             },
             {
                 "name": "Onion",
                 "quantity": 1.0,
-                "unit": "each"
+                "unit": "each",
+                "category": "vegetable"
             },
             {
                 "name": "Garlic",
                 "quantity": 2.0,
-                "unit": "cloves"
+                "unit": "cloves",
+                "category": "vegetable"
             },
             {
                 "name": "Soy Sauce",
                 "quantity": 3.0,
-                "unit": "tbsp"
+                "unit": "tbsp",
+                "category": "sauces"
             },
             {
                 "name": "Sesame Oil",
                 "quantity": 1.0,
-                "unit": "tbsp"
+                "unit": "tbsp",
+                "category": "oils"
             }
         ]
     },
@@ -185,27 +216,32 @@
             {
                 "name": "Chicken Breast",
                 "quantity": 1.5,
-                "unit": "lb"
+                "unit": "lb",
+                "category": "poultry"
             },
             {
                 "name": "Broccoli",
                 "quantity": 1.0,
-                "unit": "lb"
+                "unit": "lb",
+                "category": "vegetable"
             },
             {
                 "name": "Jasmine Rice",
                 "quantity": 1.0,
-                "unit": "bag"
+                "unit": "bag",
+                "category": "grains"
             },
             {
                 "name": "Garlic",
                 "quantity": 2.0,
-                "unit": "cloves"
+                "unit": "cloves",
+                "category": "vegetable"
             },
             {
                 "name": "Soy Sauce",
                 "quantity": 2.0,
-                "unit": "tbsp"
+                "unit": "tbsp",
+                "category": "sauces"
             }
         ]
     }

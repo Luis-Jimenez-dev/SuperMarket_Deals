@@ -1,0 +1,53 @@
+{
+    "poultry": {
+        "allowed": [
+            "Meat, Seafood & Eggs",
+            "Meat"
+        ],
+        "excluded": [
+            "Lunch & Deli Meats"
+        ]
+    },
+
+    "vegetable": {
+        "allowed": [
+            "Fruits & Vegetables",
+            "Fresh & Frozen Vegetables"
+        ],
+        "excluded": [
+            "Salad Mixes"
+        ]
+    },
+
+    "grains": {
+        "allowed": [
+            "Grains, Rice & Cereal",
+            "Pasta & Noodles",
+            "Rice"
+        ],
+        "excluded": []
+    },
+
+    "dairy": {
+        "allowed": [
+            "Dairy Products",
+            "Cheese",
+            "Cream Cheese"
+        ],
+        "excluded": []
+    },
+
+    "sauces": {
+        "allowed": [
+            "Condiments & Sauces"
+        ],
+        "excluded": []
+    },
+
+    "oils": {
+        "allowed": [
+            "Cooking Oils"
+        ],
+        "excluded": []
+    }
+}

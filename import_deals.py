@@ -1,8 +1,8 @@
 # Imports grocery deals from a selected store into the PostgreSQL database
-
 import json
 import database
 import store_search
+from psycopg.types.json import Jsonb
 
 
 # Find a store's deals and add them to its weekly ad in the database
@@ -44,9 +44,9 @@ def import_deals(deals, start_date, end_date):
         database.cur.execute(
             """
             INSERT INTO deal_items 
-            (weekly_ad_id, item, unit, category, price, 
+            (weekly_ad_id, item, unit, category, category_path, price, 
             promotion, description, amount, min_amount, max_amount, package_count)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s ,%s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s ,%s, %s, %s)
             ON CONFLICT DO NOTHING
             """,
             (
@@ -54,6 +54,7 @@ def import_deals(deals, start_date, end_date):
                 deal['item'],
                 deal['unit'],
                 deal['category'],
+                Jsonb(deal['category_path']),
                 deal['price'],
                 deal['promotion'],
                 deal['description'],
