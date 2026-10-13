@@ -39,22 +39,48 @@ function App() {
   }
 
   return (
-    <div>
+    <div className="app">
+      <header>
       <h1>Grocery Meal Planner</h1>
+      <p>Turn this week's grocery deals into meals.</p>
+      </header>
 
-      <h2>Stores</h2>
-      <select
-        value={selectedStore}
-        onChange={event => setSelectedStore(event.target.value)}
-      >
-        <option value="">Select a Store</option>
+      <section className='planner'>
+        <h2>Plan your meals</h2>
+        <div className='planner-controls'>
+        <label>
+          Store:
+          <select
+            value={selectedStore}
+            onChange={event => setSelectedStore(event.target.value)}
+          >
+            <option value="">Select a Store</option>
 
-        {stores.map(store => (
-          <option key={store.id} value={store.name}>
-            {store.name}
-          </option>
-        ))}
-      </select>
+            {stores.map(store => (
+              <option key={store.id} value={store.name}>
+                {store.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label>
+          Number of meals:
+          <input
+            type="number"
+            min="1"
+            value={meals}
+            onChange={event => setMeals(event.target.value)}
+          />
+        </label>
+        </div>
+        <button
+          className='generate-button' 
+          onClick={generateMealPlan}
+        >
+          Generate Meal Plan
+        </button>
+      </section>
 
       <h2>Weekly Deals</h2>
       {deals.map((deal, index) => (
@@ -63,27 +89,12 @@ function App() {
         </p>
       ))}
 
-      <h2>Meal Plan</h2>
-      <label>
-        Number of meals:
-        <input
-          type="number"
-          min="1"
-          value={meals}
-          onChange={event => setMeals(event.target.value)}
-        />
-      </label>
-
-      <button onClick={generateMealPlan}>
-        Generate Meal Plan
-      </button>
-
       {mealPlan && (
         <div>
           <h2>Recommended Meals</h2>
 
           {mealPlan.recipes.map((recipe, index) => (
-            <div key={index}>
+            <div className='meal-card' key={index}>
               <h3>{recipe.recipe}</h3>
               <h4>Deal Match: {recipe.match_percentage.toFixed(0)}%</h4>
               <p>

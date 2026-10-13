@@ -1,6 +1,8 @@
 # Handles recipe matching, meal plan generation, and recipe loading
 import json
 import spacy
+import time
+from functools import lru_cache
 
 nlp = spacy.load('en_core_web_sm')
 
@@ -18,12 +20,15 @@ def load_recipes():
 
     return recipes
 
-def match_ingredient(ingredient_name, deal_name):
-    ingredient_doc = nlp(ingredient_name.lower())
-    deal_doc = nlp(deal_name.lower())
+@lru_cache
+def get_lemmas(text):
+    doc = nlp(text.lower())
+    lemma = {token.lemma_ for token in doc}
+    return lemma
 
-    ingredient_words = {token.lemma_ for token in ingredient_doc}
-    deal_words = {token.lemma_ for token in deal_doc}
+def match_ingredient(ingredient_name, deal_name):
+    ingredient_words = get_lemmas(ingredient_name)
+    deal_words = get_lemmas(deal_name)
 
     matching_words = ingredient_words & deal_words
     matching_percentage = len(matching_words) / len(ingredient_words)
@@ -47,7 +52,10 @@ def match_category(ingredient_category, deal_category_path):
 
 # Generate structured meal recommendations from weekly grocery deals
 def generate(weekly_deals, recipes, meal_count):
+    start_time = time.time()
+    match_calls = 0
     recommended_recipes = []
+    best_deal_cache = {}
 
     # Compare each recipe against the available weekly deals
     for recipe in recipes:
@@ -62,50 +70,60 @@ def generate(weekly_deals, recipes, meal_count):
 
         # Find the best available deal for each recipe ingredient
         for ingredient in recipe['ingredients']:
-            best_deal = None
+            cache_key = (
+                ingredient['name'],
+                ingredient['category'],
+                ingredient['unit']
+            )
 
-            # Compare the current ingredient against every weekly deal
-            for deal in weekly_deals:
-                ingredient_words = set(
-                    ingredient['name'].title().split()
-                )
-                deal_words = set(
-                    deal['item'].title().split()
-                )
+            # Reuse the result if this ingredient was already searched
+            if cache_key in best_deal_cache:
+                best_deal = best_deal_cache[cache_key]
 
-                # Find words shared between the ingredient and deal names
-                matching_words = ingredient_words & deal_words
+            else:
+                best_deal = None
 
-                # Calculate how much of the ingredient name matches the deal
-                if len(matching_words) > 0:
-                    matching_percentage = (
-                        len(matching_words) / len(ingredient_words)
-                    )
-                else:
-                    matching_percentage = 0
+                # Compare the current ingredient against every weekly deal
+                for deal in weekly_deals:
+                    match_calls += 1
 
-                # Require more than half of the ingredient words to match
-                if (match_ingredient(ingredient['name'], deal['item']) and 
-                    match_category(ingredient['category'], deal['category_path'])):
+                    if (
+                        match_ingredient(ingredient['name'], deal['item'])
+                        and match_category(
+                            ingredient['category'],
+                            deal['category_path']
+                        )
+                    ):
+                        # Only use deals with a compatible unit
+                        if (
+                            deal['unit'] is not None
+                            and ingredient['unit'] in deal['unit']
+                        ):
+                            if (
+                                best_deal is None
+                                or best_deal['price'] > deal['price']
+                            ):
+                                best_deal = deal
 
-                    # Only use deals with a compatible unit
-                    if deal['unit'] is not None and ingredient['unit'] in deal['unit']:
-                        # Keep the cheapest valid deal found
-                        if best_deal is None:
-                            best_deal = deal
-                        elif best_deal['price'] > deal['price']:
-                            best_deal = deal
-                    elif deal['promotion'] is not None and ingredient['unit'] in deal['promotion']:
-                        if best_deal is None:
-                            best_deal = deal
-                        elif best_deal['price'] > deal['price']:
-                            best_deal = deal
+                        elif (
+                            deal['promotion'] is not None
+                            and ingredient['unit'] in deal['promotion']
+                        ):
+                            if (
+                                best_deal is None
+                                or best_deal['price'] > deal['price']
+                            ):
+                                best_deal = deal
 
+                # Remember both successful and unsuccessful searches
+                best_deal_cache[cache_key] = best_deal
 
             # Save the ingredient and deal when a valid match was found
             if best_deal is not None:
                 matches.add(ingredient['name'].title())
-                total_cost += best_deal['price'] * ingredient['quantity']
+                total_cost += (
+                    best_deal['price'] * ingredient['quantity']
+                )
 
                 matched_deals.append({
                     'ingredient': ingredient,
@@ -144,7 +162,7 @@ def generate(weekly_deals, recipes, meal_count):
                 'total_cost': total_cost
             })
 
-    # Rank recipes by the most matches and then the fewest missing ingredients
+    # Rank recipes by most matches and then fewest missing ingredients
     recommended_recipes.sort(
         key=lambda item: (
             item['matches'],
@@ -157,6 +175,7 @@ def generate(weekly_deals, recipes, meal_count):
     selected_recipes = recommended_recipes[0:meal_count]
 
     shopping_list = {}
+
     for recipe in selected_recipes:
         for ingredient in recipe['missing_ingredients']:
             if ingredient['name'] not in shopping_list:
@@ -165,7 +184,17 @@ def generate(weekly_deals, recipes, meal_count):
                     'unit': ingredient['unit']
                 }
             else:
-                shopping_list[ingredient['name']]['quantity'] += ingredient['quantity']
+                shopping_list[ingredient['name']]['quantity'] += (
+                    ingredient['quantity']
+                )
+
+    end_time = time.time()
+
+    print(
+        f"Meal plan generation took: "
+        f"{end_time - start_time:.2f} seconds"
+    )
+    print(f"Ingredient comparisons: {match_calls}")
 
     return {
         'recipes': selected_recipes,
