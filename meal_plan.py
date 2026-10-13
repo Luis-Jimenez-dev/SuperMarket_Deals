@@ -31,7 +31,13 @@ def match_ingredient(ingredient_name, deal_name):
     return matching_percentage >= .51
 
 def match_category(ingredient_category, deal_category_path):
-    allowed_categories = category_map.get(ingredient_category, set())
+    category_rules = category_map.get(ingredient_category, set())
+    allowed_categories = category_rules.get("allowed", [])
+    excluded_categories = category_rules.get("excluded", [])
+
+    for category in deal_category_path:
+        if category in excluded_categories:
+            return False
 
     for category in deal_category_path:
         if category in allowed_categories:
@@ -79,7 +85,8 @@ def generate(weekly_deals, recipes, meal_count):
                     matching_percentage = 0
 
                 # Require more than half of the ingredient words to match
-                if match_ingredient(ingredient['name'], deal['item']):
+                if (match_ingredient(ingredient['name'], deal['item']) and 
+                    match_category(ingredient['category'], deal['category_path'])):
 
                     # Only use deals with a compatible unit
                     if deal['unit'] is not None and ingredient['unit'] in deal['unit']:
