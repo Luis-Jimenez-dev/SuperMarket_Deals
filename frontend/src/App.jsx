@@ -7,6 +7,7 @@ function App() {
   const [deals, setDeals] = useState([])
   const [meals, setMeals] = useState(1)
   const [mealPlan, setMealPlan] = useState(null)
+  const [loading, setLoading] = useState(false)
 
   useEffect(() => {
     fetch('http://127.0.0.1:8000/stores')
@@ -31,16 +32,20 @@ function App() {
       return
     }
 
+    setLoading(true)
     fetch(
       `http://127.0.0.1:8000/stores/${selectedStore}/meal-plan?meals=${meals}`
     )
       .then(response => response.json())
-      .then(data => setMealPlan(data))
+      .then(data => {
+        setMealPlan(data)
+        setLoading(false)
+      })
   }
 
   return (
     <div className="app">
-      <header>
+      <header className='header'>
       <h1>Grocery Meal Planner</h1>
       <p>Turn this week's grocery deals into meals.</p>
       </header>
@@ -77,17 +82,27 @@ function App() {
         <button
           className='generate-button' 
           onClick={generateMealPlan}
+          disabled = {loading}
         >
-          Generate Meal Plan
+          {loading ? "Generating Meal Plan..." : "Generate Meal Plan"}
         </button>
       </section>
 
+      <section className='weekly-deals'>
       <h2>Weekly Deals</h2>
-      {deals.map((deal, index) => (
-        <p key={index}>
-          {deal.item} - ${deal.price} {deal.unit}
-        </p>
-      ))}
+        <div className='deal-grid'>
+          {deals.map((deal, index) => (
+            <div className='deal-card' key={index}>
+              <h3>
+                {deal.item}
+              </h3> 
+              <p>
+                ${deal.price}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
 
       {mealPlan && (
         <div>
@@ -95,14 +110,26 @@ function App() {
 
           {mealPlan.recipes.map((recipe, index) => (
             <div className='meal-card' key={index}>
-              <h3>{recipe.recipe}</h3>
-              <h4>Deal Match: {recipe.match_percentage.toFixed(0)}%</h4>
+              <div className='meal-card-header'>
+                <h3>{recipe.recipe}</h3>
+                <span className='match-badge'>
+                  {recipe.match_percentage.toFixed(0)}%
+                </span>
+              </div>
               <p>
                 Matched Deal Cost: ${recipe.total_cost.toFixed(2)}
               </p>
-              <p>
-                Need to Buy: {recipe.missing.join(', ')}
-              </p>
+              <div className='missing-ingredients'>
+                <p>Still Needed</p>
+
+                <div className='ingredient-tags'>
+                  {recipe.missing.map((ingredient, index) =>(
+                    <span key= {index}>
+                      {ingredient}
+                    </span>
+                  ))}
+                </div>
+              </div>
             </div>
           ))}
 

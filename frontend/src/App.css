@@ -71,9 +71,55 @@
   background-color: #257347;
 }
 
+.generate-button:disabled {
+  background-color: #6F8F7A;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
 .meal-card {
   border: 1px solid #ddd;
   border-radius: 12px;
   padding: 20px;
   margin-bottom: 16px;
+  text-align: left;
+}
+
+.meal-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.match-badge{
+  background-color: #e8f3ec;
+  color: #257347;
+  padding: 6px 12px;
+  border-radius: 12px;
+}
+
+.ingredient-tags {
+  display: flex;
+  gap: 8px;
+}
+
+.deal-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 15px;
+}
+
+.deal-card {
+  border : 1px solid #D3D3D3;
+  border-radius: 12px;
+  padding: 15px;
+  text-align: left;
+}
+
+.deal-card p {
+  color: #257347;
+  font-size: 20px;
+  font-weight: 500;
+  margin-top: 12px;
+  margin-bottom: 0;
 }
