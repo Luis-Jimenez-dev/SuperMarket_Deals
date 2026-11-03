@@ -65,7 +65,7 @@ def get_deals(store_name):
 def get_stores():
     cur.execute(
         """
-        SELECT name, id, merchant_store_code, city, state, postal_code
+        SELECT name, id, merchant_store_code, city, state, postal_code, address, latitude, longitude
         FROM stores
         """)
     stores = cur.fetchall()
