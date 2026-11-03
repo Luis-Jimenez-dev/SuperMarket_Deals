@@ -70,3 +70,22 @@ def get_stores():
         """)
     stores = cur.fetchall()
     return stores
+
+def upsert_store(store):
+    cur.execute(
+        """
+        INSERT INTO stores (name, brand, merchant_store_code, address, city, state, postal_code)
+        VALUES (%s, %s, %s, %s, %s, %s, %s)
+        ON CONFLICT (brand, merchant_store_code)
+        DO UPDATE SET
+        name = EXCLUDED.name, 
+        address = EXCLUDED.address, 
+        city = EXCLUDED.city, 
+        state = EXCLUDED.state, 
+        postal_code = EXCLUDED.postal_code
+        """,(
+            store['name'], store['brand'], store['merchant_store_code'], store['address'],
+            store['city'], store['state'], store['postal_code']
+        )
+    )
+    conn.commit()

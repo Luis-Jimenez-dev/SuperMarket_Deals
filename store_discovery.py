@@ -1,4 +1,5 @@
 import requests
+import database
 import os
 from dotenv import load_dotenv
 
@@ -12,15 +13,16 @@ def extract_stores(data):
 
     for store in stores:
         store_data = {
-            "name": store["domainName"],
+            "name": f"{store['domainName']} - {store['address']['line1']}",
             "merchant_store_code": store["locationId"],
             "address": store["address"]["line1"],
             "city": store["address"]["city"],
             "state": store["address"]["state"],
             "postal_code": store["address"]["zipcode"],
-            "distance": store["distance"]
+            "distance": store["distance"],
+            "brand": store["domainName"]
         }
-        nearby_stores.append(store_data)
+        nearby_stores.append(store_data)   
 
     return nearby_stores
 
@@ -41,7 +43,7 @@ def main():
     stores = find_stores("93907")
 
     for store in stores:
-        print(store)
+        database.upsert_store(store)
 
 if __name__ == "__main__":
     main()
