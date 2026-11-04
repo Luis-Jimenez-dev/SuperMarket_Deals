@@ -6,6 +6,8 @@ function DealsPage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("All")
   const [selectedStore, setSelectedStore] = useState(null)
+  const [dealsLoading, setDealsLoading] = useState(false)
+  const [dealsError, setDealsError] = useState("")
 
   // Restore the store selected on the homepage
   useEffect(() => {
@@ -22,12 +24,17 @@ function DealsPage() {
       return
     }
 
+    setDealsLoading(true)
+    setDealsError("")
+    setDeals([])
+
     fetch(
       `http://127.0.0.1:8000/stores/${selectedStore.store_id}/deals`
     )
-      .then(response => {
+      .then(async response => {
         if (!response.ok) {
-          throw new Error("Failed to load deals")
+          const errorData = await response.json()
+          throw new Error(errorData.detail)
         }
 
         return response.json()
@@ -37,6 +44,10 @@ function DealsPage() {
       })
       .catch(error => {
         console.error("Failed to load deals:", error)
+        setDealsError(error.message)
+      })
+      .finally(() => {
+        setDealsLoading(false)
       })
 
   }, [selectedStore])
@@ -73,48 +84,59 @@ function DealsPage() {
         )}
       </div>
 
-      <input
-        type="text"
-        value={searchTerm}
-        onChange={event => setSearchTerm(event.target.value)}
-        placeholder="Search weekly deals..."
-      />
+      {dealsLoading ? (
+        <p>Loading this week's deals...</p>
 
-      <select
-        value={selectedCategory}
-        onChange={event => setSelectedCategory(event.target.value)}
-      >
-        <option value="All">All Categories</option>
-
-        {categories.map(category => (
-          <option key={category} value={category}>
-            {category}
-          </option>
-        ))}
-      </select>
-
-      {filteredDeals.length > 0 ? (
-        <p>
-          {filteredDeals.length === 1
-            ? "1 deal found"
-            : `${filteredDeals.length} deals found`}
+      ) : dealsError ? (
+        <p className="error-message">
+          {dealsError}
         </p>
+
       ) : (
-        <p>No results found</p>
-      )}
+        <>
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={event => setSearchTerm(event.target.value)}
+            placeholder="Search weekly deals..."
+          />
 
-      <div className="deal-grid">
-        {filteredDeals.map(deal => (
-          <div
-            className="deal-card"
-            key={deal.source_product_id ?? deal.id ?? deal.item}
+          <select
+            value={selectedCategory}
+            onChange={event => setSelectedCategory(event.target.value)}
           >
-            <h3>{deal.item}</h3>
-            <p>${deal.price}</p>
-          </div>
-        ))}
-      </div>
+            <option value="All">All Categories</option>
 
+            {categories.map(category => (
+              <option key={category} value={category}>
+                {category}
+              </option>
+            ))}
+          </select>
+
+          {filteredDeals.length > 0 ? (
+            <p>
+              {filteredDeals.length === 1
+                ? "1 deal found"
+                : `${filteredDeals.length} deals found`}
+            </p>
+          ) : (
+            <p>No results found</p>
+          )}
+
+          <div className="deal-grid">
+            {filteredDeals.map(deal => (
+              <div
+                className="deal-card"
+                key={deal.source_product_id ?? deal.id ?? deal.item}
+              >
+                <h3>{deal.item}</h3>
+                <p>${deal.price}</p>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   )
 }

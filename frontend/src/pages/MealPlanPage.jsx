@@ -6,6 +6,7 @@ function MealPlanPage() {
   const mealPlan = location.state?.mealPlan
   const store = location.state?.store
 
+  // User reached this page without generating a meal plan first
   if (!mealPlan) {
     return (
       <div className="app">
@@ -18,6 +19,9 @@ function MealPlanPage() {
       </div>
     )
   }
+
+  const recipes = mealPlan.recipes ?? []
+  const shoppingList = mealPlan.shopping_list ?? {}
 
   return (
     <div className="app">
@@ -37,49 +41,61 @@ function MealPlanPage() {
       <section className="recommended-meals">
         <h2>Recommended Meals</h2>
 
-        {mealPlan.recipes?.map((recipe, index) => (
-          <div className="meal-card" key={index}>
+        {recipes.length > 0 ? (
+          recipes.map((recipe, index) => (
+            <div className="meal-card" key={index}>
 
-            <div className="meal-card-header">
-              <h3>{recipe.recipe}</h3>
+              <div className="meal-card-header">
+                <h3>{recipe.recipe}</h3>
 
-              <span className="match-badge">
-                {recipe.match_percentage?.toFixed(0)}% match
-              </span>
-            </div>
-
-            <p>
-              Matched Deal Cost: ${recipe.total_cost?.toFixed(2)}
-            </p>
-
-            <div className="missing-ingredients">
-              <p>Still Needed</p>
-
-              <div className="ingredient-tags">
-                {recipe.missing?.map((ingredient, ingredientIndex) => (
-                  <span key={ingredientIndex}>
-                    {ingredient}
-                  </span>
-                ))}
+                <span className="match-badge">
+                  {recipe.match_percentage?.toFixed(0)}% match
+                </span>
               </div>
-            </div>
 
-          </div>
-        ))}
+              <p>
+                Matched Deal Cost: ${recipe.total_cost?.toFixed(2)}
+              </p>
+
+              <div className="missing-ingredients">
+                <p>Still Needed</p>
+
+                <div className="ingredient-tags">
+                  {recipe.missing?.length > 0 ? (
+                    recipe.missing.map((ingredient, ingredientIndex) => (
+                      <span key={ingredientIndex}>
+                        {ingredient}
+                      </span>
+                    ))
+                  ) : (
+                    <span>No additional ingredients needed</span>
+                  )}
+                </div>
+              </div>
+
+            </div>
+          ))
+        ) : (
+          <p>No matching meals were found for this week's deals.</p>
+        )}
       </section>
 
       <section className="shopping-list">
         <h2>Shopping List</h2>
 
-        {Object.entries(mealPlan.shopping_list ?? {}).map(([name, item]) => (
-          <div className="shopping-list-item" key={name}>
-            <span>{name}</span>
+        {Object.keys(shoppingList).length > 0 ? (
+          Object.entries(shoppingList).map(([name, item]) => (
+            <div className="shopping-list-item" key={name}>
+              <span>{name}</span>
 
-            <span>
-              {item.quantity} {item.unit}
-            </span>
-          </div>
-        ))}
+              <span>
+                {item.quantity} {item.unit}
+              </span>
+            </div>
+          ))
+        ) : (
+          <p>No items have been added to your shopping list.</p>
+        )}
       </section>
 
     </div>

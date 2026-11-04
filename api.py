@@ -2,12 +2,14 @@
 
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi import HTTPException
 
 import database
 import search_deals
 import meal_plan
 import store_discovery
 import safeway_deals
+import requests
 
 
 # Create the FastAPI application
@@ -33,15 +35,21 @@ def home():
 # Get all weekly deals for a selected store
 @app.get("/stores/{store_id}/deals")
 def store_deals(store_id: int):
-    safeway_deals.ensure_current_deals(store_id)
-    return database.get_deals(store_id)
+    try:
+        safeway_deals.ensure_current_deals(store_id)
+        return database.get_deals(store_id)
 
+    except requests.exceptions.RequestException:
+        raise HTTPException(
+            status_code=503,
+            detail="Weekly deals are temporarily unavailable. Please try again in a moment."
+        )
 
 # Search through a selected store's weekly deals
-@app.get("/stores/{store_name}/deals/search")
-def search_store_deals(store_name, item):
+@app.get("/stores/{store_id}/deals/search")
+def search_store_deals(store_id, item):
     # Get the store's deals before searching for the requested item
-    deals = database.get_deals(store_name)
+    deals = database.get_deals(store_id)
     results = search_deals.search(deals, item)
 
     return results
@@ -49,13 +57,18 @@ def search_store_deals(store_name, item):
 
 # Generate meal recommendations using deals from the selected store
 @app.get("/stores/{store_id}/meal-plan")
-def generate_meal_plan(store_id: int, meals: int):
+def generate_meal_plan(store_id: int, meals: int = Query(ge=1, le=14)):
     # Load the store's current deals and available recipes
-    safeway_deals.ensure_current_deals(store_id)
-    weekly_deals = database.get_deals(store_id)
-    recipes = meal_plan.load_recipes()
-
-    return meal_plan.generate(weekly_deals, recipes, meals)
+    try:
+        safeway_deals.ensure_current_deals(store_id)
+        weekly_deals = database.get_deals(store_id)
+        recipes = meal_plan.load_recipes()
+        return meal_plan.generate(weekly_deals, recipes, meals)
+    except requests.exceptions.RequestException:
+        raise HTTPException(
+            status_code = 503,
+            detail = "Meal planning is temporarily unavailable. Please try again in a moment."
+        )
 
 @app.get("/stores")
 def get_stores():
@@ -70,5 +83,12 @@ def get_nearby_stores(
             pattern=r"^\d{5}$"
         )
     ):
-    stores = store_discovery.find_stores(postal_code)
-    return database.save_stores(stores)
+
+    try:
+        stores = store_discovery.find_stores(postal_code)
+        return database.save_stores(stores)
+    except requests.exceptions.RequestException:
+        raise HTTPException(
+            status_code = 503,
+            detail = "We couldn't search for stores right now. Please try again in a moment."
+        )
