@@ -86,11 +86,4 @@ def sync_current_deals(store_id):
     results = deal_normalizer.normalize_many_deals(products)
     food_deals = results['Food Deals']
 
-    try:
-        weekly_ad_id = database.save_weekly_ad(store_id, current_publication)
-
-        database.save_deals(food_deals, weekly_ad_id)
-        database.conn.commit()
-    except Exception:
-        database.conn.rollback()
-        raise
+    database.save_weekly_ad_with_deals(store_id, current_publication, food_deals)

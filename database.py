@@ -1,8 +1,8 @@
 # Handles the connection to the PostgreSQL database and database queries
 from datetime import datetime
-import psycopg
 from psycopg.rows import dict_row
 from psycopg.types.json import Jsonb
+from psycopg_pool import ConnectionPool
 import os
 from dotenv import load_dotenv
 
@@ -12,66 +12,75 @@ load_dotenv()
 
 
 # Connect to the Supabase PostgreSQL database using environment variables
-conn = psycopg.connect(
-    dbname = os.getenv("DB_NAME"),
-    user = os.getenv("DB_USER"),
-    password = os.getenv("DB_PASSWORD"),
-    host = os.getenv("DB_HOST"),
-    port = os.getenv("DB_PORT"),
-    sslmode = "require"
+database_url = (
+    f"dbname={os.getenv('DB_NAME')} "
+    f"user={os.getenv('DB_USER')} "
+    f"password={os.getenv('DB_PASSWORD')} "
+    f"host={os.getenv('DB_HOST')} "
+    f"port={os.getenv('DB_PORT')} "
+    f"sslmode=require"
 )
 
-# Return database rows as dictionaries instead of tuples
-cur = conn.cursor(row_factory=dict_row)
+pool = ConnectionPool(
+    conninfo = database_url,
+    min_size = 1,
+    max_size = 5
+)
 
 
 # Get the weekly deals for the selected store
 def get_deals(store_id):
-    cur.execute(
-    """
-    SELECT id
-    FROM weekly_ads
-    WHERE store_id = %s
-    ORDER BY start_date DESC
-    LIMIT 1
-    """,
-    (store_id,)
-    )
+    with pool.connection() as conn:
+        with conn.cursor(row_factory = dict_row) as cur:
+            cur.execute(
+                """
+                SELECT id
+                FROM weekly_ads
+                WHERE store_id = %s
+                AND start_date <= CURRENT_DATE
+                AND end_date >= CURRENT_DATE
+                ORDER BY start_date DESC
+                LIMIT 1
+                """,
+                (store_id,)
+            )
 
-    weekly_ad = cur.fetchone()
-    if weekly_ad is None:
-        return []
+            weekly_ad = cur.fetchone()
+            if weekly_ad is None:
+                return []
 
-    weekly_ad_id = weekly_ad['id']
+            weekly_ad_id = weekly_ad['id']
 
-    cur.execute(
-        """
-        SELECT item, price, unit, category, category_path, promotion, description, 
-        amount, min_amount, max_amount, package_count
-        FROM deal_items
-        WHERE deal_items.weekly_ad_id = %s
-        """,
-        (weekly_ad_id,)
-    )
+            cur.execute(
+                """
+                SELECT item, price, unit, category, category_path, promotion, description, 
+                amount, min_amount, max_amount, package_count
+                FROM deal_items
+                WHERE deal_items.weekly_ad_id = %s
+                """,
+                (weekly_ad_id,)
+            )
 
-    deal_items = cur.fetchall()
+            deal_items = cur.fetchall()
 
-    # PostgreSQL NUMERIC values are returned as Decimal, so convert prices to float
-    for deal in deal_items:
-        deal['price'] = float(deal['price'])
+            # PostgreSQL NUMERIC values are returned as Decimal, so convert prices to float
+            for deal in deal_items:
+                deal['price'] = float(deal['price'])
 
-    return deal_items
+            return deal_items
 
 def get_stores():
-    cur.execute(
-        """
-        SELECT name, id, merchant_store_code, city, state, postal_code, address, latitude, longitude
-        FROM stores
-        """)
-    stores = cur.fetchall()
-    return stores
+    with pool.connection() as conn:
+        with conn.cursor(row_factory = dict_row) as cur:
+            cur.execute(
+                """
+                SELECT name, id, merchant_store_code, city, state, postal_code, address, latitude, longitude
+                FROM stores
+                """)
+            stores = cur.fetchall()
+            return stores
 
-def _save_store(store):
+def _save_store(store, cur):
     cur.execute(
         """
         INSERT INTO stores (name, brand, merchant_store_code, address, city, state, postal_code)
@@ -95,47 +104,50 @@ def _save_store(store):
     return store_row['id']
 
 def save_stores(stores):
-    for store in stores:
-        store_id = _save_store(store)
-        store.update({'store_id': store_id})
-
-    conn.commit()
-
+    with pool.connection() as conn:
+        with conn.cursor(row_factory = dict_row) as cur:
+            for store in stores:
+                store_id = _save_store(store, cur)
+                store.update({'store_id': store_id})
     return stores
 
 def get_store_source_info(store_id):
-    cur.execute(
-        """
-        SELECT merchant_store_code, postal_code
-        FROM stores
-        WHERE id = %s
-        """,
-        (store_id,)
-    )
-    store = cur.fetchone()
+    with pool.connection() as conn:
+        with conn.cursor(row_factory = dict_row) as cur:
+            cur.execute(
+                """
+                SELECT merchant_store_code, postal_code
+                FROM stores
+                WHERE id = %s
+                """,
+                (store_id,)
+            )
+            store = cur.fetchone()
 
-    if store is None:
-        return None
+            if store is None:
+                return None
 
-    return store
+            return store
 
 def get_current_weekly_ad(store_id):
-    cur.execute(
-        """
-        SELECT *
-        FROM weekly_ads
-        WHERE store_id = %s
-        AND start_date <= CURRENT_DATE
-        AND end_date >= CURRENT_DATE
-        """,
-        (store_id,)
-    )
+    with pool.connection() as conn:
+        with conn.cursor(row_factory = dict_row) as cur:
+            cur.execute(
+                """
+                SELECT *
+                FROM weekly_ads
+                WHERE store_id = %s
+                AND start_date <= CURRENT_DATE
+                AND end_date >= CURRENT_DATE
+                """,
+                (store_id,)
+            )
 
-    weekly_ad = cur.fetchone()
+            weekly_ad = cur.fetchone()
 
-    return weekly_ad
+            return weekly_ad
 
-def save_weekly_ad(store_id, publication):
+def _save_weekly_ad(store_id, publication, cur):
     source_publication_id = publication['id']
     start_date = datetime.fromisoformat(publication['valid_from']).date()
     end_date = datetime.fromisoformat(publication['valid_to']).date()
@@ -162,7 +174,7 @@ def save_weekly_ad(store_id, publication):
 
     return(weekly_ad_row['id'])
 
-def save_deals(deals, weekly_ad_id):
+def _save_deals(deals, weekly_ad_id, cur):
     for deal in deals:
         cur.execute(
             """
@@ -201,3 +213,9 @@ def save_deals(deals, weekly_ad_id):
                 deal['package_count']
             )
         )
+
+def save_weekly_ad_with_deals(store_id, publication, deals):
+    with pool.connection() as conn:
+        with conn.cursor(row_factory = dict_row) as cur:
+            weekly_ad_id = _save_weekly_ad(store_id, publication, cur)
+            _save_deals(deals, weekly_ad_id, cur)
