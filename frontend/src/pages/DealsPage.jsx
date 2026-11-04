@@ -5,6 +5,7 @@ function DealsPage() {
   const [deals, setDeals] = useState([])
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedCategory, setSelectedCategory] = useState("All")
+  const [selectedStore, setSelectedStore] = (null)
 
   const filteredDeals = deals.filter(deal =>
     deal.item.toLowerCase().includes(searchTerm.toLowerCase()) &&
@@ -21,8 +22,17 @@ function DealsPage() {
     )
   ]
 
+  const selectStore = (store) => {
+    setSelectedStore(store)
+    localStorage.setItem("selectedStore", JSON.stringify(store))
+  }
+
   useEffect(() => {
-    fetch('http://127.0.0.1:8000/stores/Safeway Broadway/deals')
+    if (!selectStore){
+      return
+    }
+
+    fetch(`http://127.0.0.1:8000/stores/${selectedStore.store_id}/deals`)
       .then(response => response.json())
       .then(data => setDeals(data))
   }, [])

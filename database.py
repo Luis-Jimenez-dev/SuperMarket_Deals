@@ -25,17 +25,16 @@ cur = conn.cursor(row_factory=dict_row)
 
 
 # Get the weekly deals for the selected store
-def get_deals(store_name):
+def get_deals(store_id):
     cur.execute(
     """
-    SELECT weekly_ads.id
+    SELECT id
     FROM weekly_ads
-    JOIN stores ON weekly_ads.store_id = stores.id
-    WHERE stores.name ILIKE %s
-    ORDER BY weekly_ads.start_date DESC
+    WHERE store_id = %s
+    ORDER BY start_date DESC
     LIMIT 1
     """,
-    (f"%{store_name}%",)
+    (store_id,)
     )
 
     weekly_ad = cur.fetchone()
@@ -71,7 +70,7 @@ def get_stores():
     stores = cur.fetchall()
     return stores
 
-def upsert_store(store):
+def _save_store(store):
     cur.execute(
         """
         INSERT INTO stores (name, brand, merchant_store_code, address, city, state, postal_code)
@@ -83,9 +82,22 @@ def upsert_store(store):
         city = EXCLUDED.city, 
         state = EXCLUDED.state, 
         postal_code = EXCLUDED.postal_code
+        RETURNING id
         """,(
             store['name'], store['brand'], store['merchant_store_code'], store['address'],
             store['city'], store['state'], store['postal_code']
         )
     )
+
+    store_row = cur.fetchone()
+
+    return store_row['id']
+
+def save_stores(stores):
+    for store in stores:
+        store_id = _save_store(store)
+        store.update({'store_id': store_id})
+
     conn.commit()
+
+    return stores

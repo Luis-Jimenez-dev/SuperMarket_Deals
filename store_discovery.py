@@ -38,12 +38,3 @@ def find_stores(zipcode):
     data = response.json()
 
     return extract_stores(data)
-
-def main():
-    stores = find_stores("93907")
-
-    for store in stores:
-        database.upsert_store(store)
-
-if __name__ == "__main__":
-    main()

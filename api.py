@@ -1,11 +1,12 @@
 # FastAPI routes for accessing grocery deals and meal planning features
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 
 import database
 import search_deals
 import meal_plan
+import store_discovery
 
 
 # Create the FastAPI application
@@ -29,9 +30,9 @@ def home():
 
 
 # Get all weekly deals for a selected store
-@app.get("/stores/{store_name}/deals")
-def store_deals(store_name):
-    return database.get_deals(store_name)
+@app.get("/stores/{store_id}/deals")
+def store_deals(store_id: int):
+    return database.get_deals(store_id)
 
 
 # Search through a selected store's weekly deals
@@ -56,3 +57,15 @@ def generate_meal_plan(store_name: str, meals: int):
 @app.get("/stores")
 def get_stores():
     return database.get_stores()
+
+@app.get("/stores/nearby")
+def get_nearby_stores(
+        postal_code: str = 
+        Query(
+            min_length=5, 
+            max_length=5, 
+            pattern=r"^\d{5}$"
+        )
+    ):
+    stores = store_discovery.find_stores(postal_code)
+    return database.save_stores(stores)
