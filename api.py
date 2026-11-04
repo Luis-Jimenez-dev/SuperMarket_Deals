@@ -7,6 +7,7 @@ import database
 import search_deals
 import meal_plan
 import store_discovery
+import safeway_deals
 
 
 # Create the FastAPI application
@@ -32,6 +33,7 @@ def home():
 # Get all weekly deals for a selected store
 @app.get("/stores/{store_id}/deals")
 def store_deals(store_id: int):
+    safeway_deals.ensure_current_deals(store_id)
     return database.get_deals(store_id)
 
 
@@ -46,10 +48,11 @@ def search_store_deals(store_name, item):
 
 
 # Generate meal recommendations using deals from the selected store
-@app.get("/stores/{store_name}/meal-plan")
-def generate_meal_plan(store_name: str, meals: int):
+@app.get("/stores/{store_id}/meal-plan")
+def generate_meal_plan(store_id: int, meals: int):
     # Load the store's current deals and available recipes
-    weekly_deals = database.get_deals(store_name)
+    safeway_deals.ensure_current_deals(store_id)
+    weekly_deals = database.get_deals(store_id)
     recipes = meal_plan.load_recipes()
 
     return meal_plan.generate(weekly_deals, recipes, meals)

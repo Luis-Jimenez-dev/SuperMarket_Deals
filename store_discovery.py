@@ -32,7 +32,7 @@ def find_stores(zipcode):
         "ocp-apim-subscription-key": safeway_api_key
     }
 
-    response = requests.get(url, headers = header)
+    response = requests.get(url, headers = header, timeout= 10)
     response.raise_for_status()
 
     data = response.json()

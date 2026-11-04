@@ -1,7 +1,8 @@
 # Handles the connection to the PostgreSQL database and database queries
-
+from datetime import datetime
 import psycopg
 from psycopg.rows import dict_row
+from psycopg.types.json import Jsonb
 import os
 from dotenv import load_dotenv
 
@@ -101,3 +102,102 @@ def save_stores(stores):
     conn.commit()
 
     return stores
+
+def get_store_source_info(store_id):
+    cur.execute(
+        """
+        SELECT merchant_store_code, postal_code
+        FROM stores
+        WHERE id = %s
+        """,
+        (store_id,)
+    )
+    store = cur.fetchone()
+
+    if store is None:
+        return None
+
+    return store
+
+def get_current_weekly_ad(store_id):
+    cur.execute(
+        """
+        SELECT *
+        FROM weekly_ads
+        WHERE store_id = %s
+        AND start_date <= CURRENT_DATE
+        AND end_date >= CURRENT_DATE
+        """,
+        (store_id,)
+    )
+
+    weekly_ad = cur.fetchone()
+
+    return weekly_ad
+
+def save_weekly_ad(store_id, publication):
+    source_publication_id = publication['id']
+    start_date = datetime.fromisoformat(publication['valid_from']).date()
+    end_date = datetime.fromisoformat(publication['valid_to']).date()
+
+    cur.execute(
+        """
+        INSERT INTO weekly_ads(
+            store_id,
+            source_publication_id,
+            start_date,
+            end_date
+        )
+        VALUES(%s, %s, %s, %s)
+        ON CONFLICT(store_id, source_publication_id)
+        DO UPDATE SET
+        start_date = EXCLUDED.start_date,
+        end_date = EXCLUDED.end_date
+        RETURNING id
+        """,
+        (store_id, source_publication_id, start_date, end_date)
+    )
+
+    weekly_ad_row = cur.fetchone()
+
+    return(weekly_ad_row['id'])
+
+def save_deals(deals, weekly_ad_id):
+    for deal in deals:
+        cur.execute(
+            """
+            INSERT INTO deal_items (
+                weekly_ad_id,
+                source_product_id,
+                item,
+                unit,
+                category,
+                category_path,
+                price,
+                promotion,
+                description,
+                amount,
+                min_amount,
+                max_amount,
+                package_count
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            ON CONFLICT (weekly_ad_id, source_product_id)
+            DO NOTHING
+            """,
+            (
+                weekly_ad_id,
+                deal['source_product_id'],
+                deal['item'],
+                deal['unit'],
+                deal['category'],
+                Jsonb(deal['category_path']),
+                deal['price'],
+                deal['promotion'],
+                deal['description'],
+                deal['amount'],
+                deal['min_amount'],
+                deal['max_amount'],
+                deal['package_count']
+            )
+        )

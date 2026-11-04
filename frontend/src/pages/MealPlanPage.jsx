@@ -25,32 +25,38 @@ function MealPlanPage() {
 
       <div className="meal-plan-header">
         <h1>Your Meal Plan</h1>
-        <p>Based on this week's deals at {store}</p>
+
+        {store && (
+          <p>
+            Based on this week's deals at {store.name}
+            {store.city && ` · ${store.city}, ${store.state}`}
+          </p>
+        )}
       </div>
 
       <section className="recommended-meals">
         <h2>Recommended Meals</h2>
 
-        {mealPlan.recipes.map((recipe, index) => (
+        {mealPlan.recipes?.map((recipe, index) => (
           <div className="meal-card" key={index}>
 
             <div className="meal-card-header">
               <h3>{recipe.recipe}</h3>
 
               <span className="match-badge">
-                {recipe.match_percentage.toFixed(0)}% match
+                {recipe.match_percentage?.toFixed(0)}% match
               </span>
             </div>
 
             <p>
-              Matched Deal Cost: ${recipe.total_cost.toFixed(2)}
+              Matched Deal Cost: ${recipe.total_cost?.toFixed(2)}
             </p>
 
             <div className="missing-ingredients">
               <p>Still Needed</p>
 
               <div className="ingredient-tags">
-                {recipe.missing.map((ingredient, ingredientIndex) => (
+                {recipe.missing?.map((ingredient, ingredientIndex) => (
                   <span key={ingredientIndex}>
                     {ingredient}
                   </span>
@@ -65,9 +71,10 @@ function MealPlanPage() {
       <section className="shopping-list">
         <h2>Shopping List</h2>
 
-        {Object.entries(mealPlan.shopping_list).map(([name, item]) => (
+        {Object.entries(mealPlan.shopping_list ?? {}).map(([name, item]) => (
           <div className="shopping-list-item" key={name}>
             <span>{name}</span>
+
             <span>
               {item.quantity} {item.unit}
             </span>

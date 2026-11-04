@@ -1,9 +1,4 @@
-import json
 import re
-import import_deals
-
-with open ('data/safeway_sample.json', 'r', encoding='utf-8') as file:
-    data = json.load(file)
 
 # Used for a single deal
 def normalize_deal(raw_deal):
@@ -23,6 +18,7 @@ def normalize_deal(raw_deal):
     unit = package_info.get('unit')
 
     deal = {
+        "source_product_id": raw_deal['id'],
         'item': raw_deal['name'],
         'price': price,
         'promotion': raw_deal['post_price_text'],
@@ -126,8 +122,3 @@ def normalize_many_deals(raw_deals):
         'Food Deals': food_deals,
         'Other Deals': other_deals
     })
-
-results = normalize_many_deals(data)
-food_deals = results['Food Deals']
-
-import_deals.import_deals(food_deals, '2026-09-16', '2026-09-22')
