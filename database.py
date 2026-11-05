@@ -219,3 +219,77 @@ def save_weekly_ad_with_deals(store_id, publication, deals):
         with conn.cursor(row_factory = dict_row) as cur:
             weekly_ad_id = _save_weekly_ad(store_id, publication, cur)
             _save_deals(deals, weekly_ad_id, cur)
+
+def _save_recipe (recipe, cur):
+    cur.execute(
+        """
+        INSERT INTO recipes (
+            source,
+            source_recipe_id,
+            name,
+            instructions,
+            image_url,
+            servings,
+            cuisine,
+            category
+        )
+        VALUES (%s, %s, %s, %s, %s, %s, %s, %s)
+        ON CONFLICT (source, source_recipe_id)
+        DO UPDATE SET
+            name = EXCLUDED.name,
+            instructions = EXCLUDED.instructions,
+            image_url = EXCLUDED.image_url,
+            servings = EXCLUDED.servings,
+            cuisine = EXCLUDED.cuisine,
+            category = EXCLUDED.category
+
+        RETURNING id
+        """,
+        (
+            recipe['source'],
+            recipe['source_recipe_id'],
+            recipe['name'],
+            recipe['instructions'],
+            recipe['image_url'],
+            None,
+            recipe['cuisine'],
+            recipe['category']
+        )
+    )
+
+    recipe_row = cur.fetchone()
+
+    return recipe_row['id']
+
+def _save_recipe_ingredients(recipe_id, ingredients, cur):
+    cur.execute(
+        """
+        DELETE FROM recipe_ingredients
+        WHERE recipe_id = %s
+        """,
+        (recipe_id,)
+    )
+        
+    for ingredient in ingredients:
+        cur.execute(
+            """
+            INSERT INTO recipe_ingredients (
+                recipe_id,
+                name,
+                measurement
+            )
+            VALUES (%s, %s, %s)
+            """,
+            (
+                recipe_id,
+                ingredient['name'],
+                ingredient['measurement']
+            )
+        )
+
+def save_recipe(recipe):
+    with pool.connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            recipe_id = _save_recipe(recipe, cur)
+            _save_recipe_ingredients(recipe_id, recipe['ingredients'], cur)
+            return recipe_id
