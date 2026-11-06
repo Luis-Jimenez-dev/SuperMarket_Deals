@@ -289,7 +289,62 @@ def _save_recipe_ingredients(recipe_id, ingredients, cur):
 
 def save_recipe(recipe):
     with pool.connection() as conn:
-        with conn.cursor(row_factory=dict_row) as cur:
+        with conn.cursor(row_factory = dict_row) as cur:
             recipe_id = _save_recipe(recipe, cur)
             _save_recipe_ingredients(recipe_id, recipe['ingredients'], cur)
             return recipe_id
+        
+def get_recipes():
+    with pool.connection() as conn:
+        with conn.cursor(row_factory=dict_row) as cur:
+            cur.execute(
+                """
+                SELECT
+                    r.id,
+                    r.source,
+                    r.source_recipe_id,
+                    r.name,
+                    r.instructions,
+                    r.image_url,
+                    r.servings,
+                    r.cuisine,
+                    r.category,
+                    ri.name AS ingredient_name,
+                    ri.measurement
+                FROM recipes r
+                JOIN recipe_ingredients ri
+                    ON r.id = ri.recipe_id
+                ORDER BY r.id
+                """
+            )
+
+            rows = cur.fetchall()
+
+            recipes = {}
+
+            for row in rows:
+                recipe_id = row['id']
+
+                if recipe_id not in recipes:
+                    recipes[recipe_id] = {
+                        "id": recipe_id,
+                        "source" : row['source'],
+                        "source_recipe_id" : row['source_recipe_id'],
+                        "name" : row['name'],
+                        "instructions": row['instructions'],
+                        "image_url" : row['image_url'],
+                        "servings" : row['servings'],
+                        "cuisine" : row['cuisine'],
+                        "category" : row['category'],
+                        "ingredients": [{
+                            'name': row['ingredient_name'],
+                            'measurement' : row['measurement']
+                        }]
+                    }
+                else:
+                    recipes[recipe_id]['ingredients'].append({
+                        'name': row['ingredient_name'],
+                        'measurement': row['measurement']
+                    })
+
+            return list(recipes.values())

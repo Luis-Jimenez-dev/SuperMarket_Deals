@@ -2,3 +2,4 @@
 __pycache__/
 *.pyc
 .env
+normalization/data/normalization_review.json

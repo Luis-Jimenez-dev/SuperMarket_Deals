@@ -1,0 +1,35 @@
+{
+    "poultry": [
+        "chicken",
+        "chicken breast",
+        "chicken breasts",
+        "chicken thigh",
+        "chicken thighs"
+    ],
+    "vegetable": [
+        "broccoli",
+        "carrot",
+        "carrots",
+        "stir-fry vegetables",
+        "onion",
+        "onions"
+    ],
+    "grains": [
+        "rice",
+        "brown rice"
+    ],
+    "dairy": [
+        "milk",
+        "butter",
+        "cheese",
+        "halloumi",
+        "halloumi cheese"
+    ],
+    "sauces": [
+        "soy sauce"
+    ],
+    "oils": [
+        "olive oil",
+        "vegetable oil"
+    ]
+}
