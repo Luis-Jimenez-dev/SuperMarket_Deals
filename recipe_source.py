@@ -85,28 +85,21 @@ def get_recipes_by_category(category):
 
     return data["meals"]
 
-def ingest_category(category, limit = None):
+def ingest_category(category, limit=None):
     recipes = get_recipes_by_category(category)
 
     if limit is not None:
-        recipes = recipes [:limit]
+        recipes = recipes[:limit]
 
     for recipe in recipes:
-        recipe_id = recipe["idMeal"]
+        source_recipe_id = recipe["idMeal"]
 
-        full_recipe = get_recipe(recipe_id)
-
+        full_recipe = get_recipe(source_recipe_id)
         normalized_recipe = normalize_recipe(full_recipe)
 
-        hungy_recipe_id = hungy_recipe_id = database.save_recipe(normalized_recipe)
+        recipe_id = database.save_recipe(normalized_recipe)
 
         print(
             f"Saved {normalized_recipe['name']} "
-            f"as Hungy recipe {hungy_recipe_id}"
+            f"as recipe {recipe_id}"
         )
-
-if __name__ == "__main__":
-    try:
-        ingest_category("Chicken", limit=3)
-    finally:
-        database.pool.close()
