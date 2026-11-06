@@ -19,10 +19,14 @@ SINGULAR_EXCEPTIONS = {
 
 WORD_NORMALIZATIONS = {
     "breasts": "breast",
+    "buns": "bun",
     "carrots": "carrot",
     "onions": "onion",
     "tomatoes": "tomato",
     "potatoes": "potato",
+    "thighs": "thigh",
+    "legs": "leg",
+    "yolks": "yolk",
     "leaves": "leaf",
     "loaves": "loaf",
 }
@@ -135,14 +139,32 @@ def normalize_list(values):
 def get_known_terms():
     known_terms = set()
 
-    for terms in grocery_vocabulary.values():
-        for term in terms:
-            normalized_term = normalize_text(term)
+    for aliases in grocery_vocabulary["ingredients"].values():
+        for alias in aliases:
+            normalized_term = normalize_text(alias)
 
             if normalized_term:
                 known_terms.add(normalized_term)
 
     return known_terms
+
+
+def get_canonical_term(term):
+    normalized_term = normalize_text(term)
+
+    if not normalized_term:
+        return None
+
+    for canonical, aliases in grocery_vocabulary["ingredients"].items():
+        normalized_canonical = normalize_text(canonical)
+
+        for alias in aliases:
+            normalized_alias = normalize_text(alias)
+
+            if normalized_term == normalized_alias:
+                return normalized_canonical
+
+    return None
 
 
 def is_known_term(text):
@@ -250,10 +272,12 @@ def analyze_text(text, source="unknown", review_unknown=True):
             "original": text,
             "normalized": "",
             "matched_term": None,
+            "canonical": None,
             "recognized": False
         }
 
     matched_term = find_best_known_term(normalized_text)
+    canonical = get_canonical_term(matched_term)
     recognized = matched_term is not None
 
     if not recognized and review_unknown:
@@ -263,6 +287,7 @@ def analyze_text(text, source="unknown", review_unknown=True):
         "original": text,
         "normalized": normalized_text,
         "matched_term": matched_term,
+        "canonical": canonical,
         "recognized": recognized
     }
 

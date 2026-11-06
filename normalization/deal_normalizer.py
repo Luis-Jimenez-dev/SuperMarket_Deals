@@ -49,13 +49,13 @@ def get_category(raw_deal):
 
 def get_price(raw_deal):
     try:
-        price = float(raw_deal['price_text'])
-    except (KeyError, ValueError):
+        price = float(raw_deal["price_text"])
+    except (KeyError, ValueError, TypeError):
         return None
 
-    pre_price_text = raw_deal.get('pre_price_text', '')
+    pre_price_text = raw_deal.get("pre_price_text", "")
 
-    if 'for' in pre_price_text:
+    if "for" in pre_price_text:
         parts = pre_price_text.split()
         quantity = int(parts[0])
         price = price / quantity

@@ -1,24 +1,154 @@
 {
-    "ingredients": [
-        "chicken",
-        "chicken breast",
-        "brown rice",
-        "soy sauce",
-        "water",
-        "brown sugar",
-        "ground ginger",
-        "minced garlic",
-        "cornstarch",
-        "stir-fry vegetable",
-        "carrot",
-        "onion",
-        "broccoli",
-        "milk",
-        "butter",
-        "cheese",
-        "halloumi",
-        "olive oil",
-        "vegetable oil",
-        "ham"
-    ]
+    "ingredients": {
+        "chicken": [
+            "chicken"
+        ],
+        "chicken breast": [
+            "chicken breast",
+            "chicken breasts"
+        ],
+        "brown rice": [
+            "brown rice"
+        ],
+        "soy sauce": [
+            "soy sauce"
+        ],
+        "water": [
+            "water"
+        ],
+        "brown sugar": [
+            "brown sugar"
+        ],
+        "ginger": [
+            "ginger",
+            "ground ginger"
+        ],
+        "garlic": [
+            "garlic",
+            "garlic clove",
+            "minced garlic"
+        ],
+        "cornstarch": [
+            "cornstarch"
+        ],
+        "stir-fry vegetable": [
+            "stir-fry vegetable",
+            "stir-fry vegetables"
+        ],
+        "carrot": [
+            "carrot",
+            "carrots"
+        ],
+        "onion": [
+            "onion",
+            "onions"
+        ],
+        "broccoli": [
+            "broccoli"
+        ],
+        "milk": [
+            "milk"
+        ],
+        "coconut milk": [
+            "coconut milk"
+        ],
+        "butter": [
+            "butter"
+        ],
+        "cheese": [
+            "cheese"
+        ],
+        "halloumi": [
+            "halloumi"
+        ],
+        "olive oil": [
+            "olive oil"
+        ],
+        "vegetable oil": [
+            "vegetable oil"
+        ],
+        "ham": [
+            "ham"
+        ],
+        "bay leaf": [
+            "bay leaf"
+        ],
+        "bun": [
+            "bun"
+        ],
+        "cabbage": [
+            "cabbage"
+        ],
+        "cayenne pepper": [
+            "cayenne pepper"
+        ],
+        "celery": [
+            "celery"
+        ],
+        "shallot": [
+            "shallot",
+            "challots"
+        ],
+        "coriander": [
+            "coriander"
+        ],
+        "cream": [
+            "cream"
+        ],
+        "cumin": [
+            "cumin"
+        ],
+        "egg yolk": [
+            "egg yolk"
+        ],
+        "fennel": [
+            "fennel"
+        ],
+        "hot sauce": [
+            "hot sauce",
+            "hotsauce"
+        ],
+        "leek": [
+            "leek"
+        ],
+        "lemon juice": [
+            "lemon juice"
+        ],
+        "lettuce": [
+            "lettuce"
+        ],
+        "mayonnaise": [
+            "mayonnaise"
+        ],
+        "oil": [
+            "oil"
+        ],
+        "pepper": [
+            "pepper"
+        ],
+        "potato": [
+            "potato"
+        ],
+        "red pepper": [
+            "red pepper"
+        ],
+        "rosemary": [
+            "rosemary"
+        ],
+        "salt": [
+            "salt"
+        ],
+        "sour cream": [
+            "sour cream"
+        ],
+        "sugar": [
+            "sugar"
+        ],
+        "tamarind paste": [
+            "tamarind paste"
+        ],
+        "turmeric": [
+            "turmeric"
+        ]
+    }
 }

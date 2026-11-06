@@ -1,7 +1,8 @@
 from normalization.text_normalizer import (
     normalize_text,
     find_best_known_term,
-    analyze_text
+    analyze_text,
+    get_canonical_term
     )
 
 def test_normalize_chicken_breast():
@@ -38,6 +39,7 @@ def test_analyze_known_product():
         "original" : 'Kikkoman Soy Sauce',
         "normalized" : 'kikkoman soy sauce',
         "matched_term" : 'soy sauce',
+        "canonical": 'soy sauce',
         "recognized" : True
     }
 
@@ -47,5 +49,53 @@ def test_analyze_unknown_product():
         "original" : 'Gochujang',
         "normalized" : 'gochujang',
         "matched_term" : None,
+        "canonical": None,
         "recognized" : False
     }
+
+def test_get_canonical_term_for_alias():
+    result = get_canonical_term("minced garlic")
+    assert result == "garlic"
+
+
+def test_get_canonical_term_preserves_specific_ingredient():
+    result = get_canonical_term("coconut milk")
+    assert result == "coconut milk"
+
+
+def test_analyze_product_returns_specific_match_and_canonical_term():
+    result = analyze_text(
+        "Fresh Minced Garlic 8 oz",
+        review_unknown=False
+    )
+
+    assert result["matched_term"] == "minced garlic"
+    assert result["canonical"] == "garlic"
+
+def test_normalize_chicken_thighs():
+    result = normalize_text("Chicken Thighs")
+    assert result == "chicken thigh"
+
+
+def test_normalize_chicken_legs():
+    result = normalize_text("Chicken Legs")
+    assert result == "chicken leg"
+
+
+def test_normalize_egg_yolks():
+    result = normalize_text("Egg Yolks")
+    assert result == "egg yolk"
+
+
+def test_normalize_buns():
+    result = normalize_text("Buns")
+    assert result == "bun"
+
+def test_source_typo_maps_to_canonical_shallot():
+    result = get_canonical_term("challots")
+    assert result == "shallot"
+
+
+def test_hotsauce_maps_to_canonical_hot_sauce():
+    result = get_canonical_term("hotsauce")
+    assert result == "hot sauce"
