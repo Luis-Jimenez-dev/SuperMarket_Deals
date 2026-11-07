@@ -99,3 +99,17 @@ def test_source_typo_maps_to_canonical_shallot():
 def test_hotsauce_maps_to_canonical_hot_sauce():
     result = get_canonical_term("hotsauce")
     assert result == "hot sauce"
+
+def test_bell_pepper_is_more_specific_than_pepper():
+    result = find_best_known_term(
+        "Fresh Green Bell Pepper"
+    )
+
+    assert result == "green bell pepper"
+
+def test_green_bell_pepper_maps_to_bell_pepper():
+    result = get_canonical_term(
+        "green bell pepper"
+    )
+
+    assert result == "bell pepper"

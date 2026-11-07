@@ -47,13 +47,24 @@ def test_usable_deal_requires_price():
 
 def test_food_deal():
     deal = {
-        "category_path": [
+        "food_category_path": [
             "Food Items",
             "Meat, Seafood & Eggs"
         ]
     }
 
     assert is_food_deal(deal) is True
+
+def test_non_food_deal():
+    deal = {
+        "food_category_path": [
+            "Business & Industrial",
+            "Food Service",
+            "Disposable Tableware",
+        ]
+    }
+
+    assert is_food_deal(deal) is False
 
 
 def test_non_food_deal():
@@ -108,3 +119,47 @@ def test_normalize_deal_preserves_original_item_name():
     assert result["item"] == original_name
     assert result["canonical_ingredient"] == "chicken breast"
     assert result["ingredient_category"] == "poultry"
+
+def test_potato_chips_do_not_match_potato():
+    result = get_ingredient_info(
+        "Lay's Potato Chips"
+    )
+
+    assert result["canonical_ingredient"] is None
+    assert result["ingredient_category"] is None
+
+
+def test_yogurt_does_not_match_sugar():
+    result = get_ingredient_info(
+        "Chobani Greek, Less Sugar or Zero Sugar Yogurt"
+    )
+
+    assert result["canonical_ingredient"] is None
+    assert result["ingredient_category"] is None
+
+
+def test_ice_cream_does_not_match_cream():
+    result = get_ingredient_info(
+        "Jeni's Splendid Ice Cream"
+    )
+
+    assert result["canonical_ingredient"] is None
+    assert result["ingredient_category"] is None
+
+
+def test_pizza_does_not_match_cheese():
+    result = get_ingredient_info(
+        "Tattooed Chef Cottage Cheese Pizza"
+    )
+
+    assert result["canonical_ingredient"] is None
+    assert result["ingredient_category"] is None
+
+
+def test_bell_pepper_does_not_match_seasoning_pepper():
+    result = get_ingredient_info(
+        "Red, Orange, Yellow or Green Bell Pepper"
+    )
+
+    assert result["canonical_ingredient"] == "bell pepper"
+    assert result["ingredient_category"] == "vegetable"

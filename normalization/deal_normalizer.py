@@ -6,12 +6,27 @@ from normalization.text_normalizer import (
 )
 from normalization.ingredient_normalizer import classify_canonical_ingredient
 
+NON_INGREDIENT_PRODUCT_PHRASES = {
+    "potato chips",
+    "ice cream",
+    "pizza",
+    "yogurt",
+}
+
 
 def get_ingredient_info(item_name):
     """
-    Identify the canonical ingredient and internal ingredient category
-    for a retailer product name.
+    Identify a canonical recipe ingredient represented by a retailer deal.
+
+    Deal names are treated conservatively because a known ingredient word
+    can appear inside a different prepared or packaged product.
     """
+    if contains_non_ingredient_product_phrase(item_name):
+        return {
+            "canonical_ingredient": None,
+            "ingredient_category": None,
+        }
+
     matched_term = find_best_known_term(item_name)
 
     if matched_term is None:
@@ -37,12 +52,13 @@ def get_ingredient_info(item_name):
         "ingredient_category": ingredient_category,
     }
 
-
 def normalize_deal(raw_deal):
     price = get_price(raw_deal)
 
     category_path = get_category(raw_deal)
     category = category_path[-1] if category_path else None
+
+    food_category_path = get_food_category_path(raw_deal)
 
     package_info = get_package_info(raw_deal.get("description")) or {}
 
@@ -66,6 +82,9 @@ def normalize_deal(raw_deal):
         # Retailer-provided category information.
         "category": category,
         "category_path": category_path,
+
+        # Structured Flipp/Google category hierarchy.
+        "food_category_path": food_category_path,
 
         "description": raw_deal.get("description"),
 
@@ -102,6 +121,10 @@ def get_price(raw_deal):
 
 
 def get_category(raw_deal):
+    """
+    Preserve the retailer-facing categories supplied by Flipp.
+    Example: ["Deli"]
+    """
     categories = raw_deal.get("categories")
 
     if not categories:
@@ -118,6 +141,36 @@ def get_category(raw_deal):
 
         elif isinstance(category, str):
             category_path.append(category)
+
+    return category_path
+
+
+def get_food_category_path(raw_deal):
+    """
+    Extract the structured Flipp/Google category hierarchy.
+
+    Example:
+    Food, Beverages & Tobacco
+        -> Food Items
+        -> Meat, Seafood & Eggs
+        -> Meat
+        -> Fresh & Frozen Meats
+    """
+    item_categories = raw_deal.get("item_categories") or {}
+
+    category_path = []
+
+    # Flipp currently provides levels such as l1, l2, l3, etc.
+    for level_number in range(1, 8):
+        level = item_categories.get(f"l{level_number}")
+
+        if not isinstance(level, dict):
+            continue
+
+        category_name = level.get("category_name")
+
+        if category_name:
+            category_path.append(category_name)
 
     return category_path
 
@@ -208,9 +261,13 @@ def is_usable_deal(deal):
 
 
 def is_food_deal(deal):
-    category_path = deal.get("category_path") or []
+    """
+    Determine whether the deal represents food using the structured
+    Flipp/Google category hierarchy.
+    """
+    food_category_path = deal.get("food_category_path") or []
 
-    return "Food Items" in category_path
+    return "Food Items" in food_category_path
 
 
 def normalize_many_deals(raw_deals):
@@ -236,3 +293,14 @@ def normalize_many_deals(raw_deals):
         "Food Deals": food_deals,
         "Other Deals": other_deals,
     }
+
+def contains_non_ingredient_product_phrase(item_name):
+    normalized_name = item_name.lower()
+
+    for phrase in NON_INGREDIENT_PRODUCT_PHRASES:
+        pattern = rf"\b{re.escape(phrase)}\b"
+
+        if re.search(pattern, normalized_name):
+            return True
+
+    return False

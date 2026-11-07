@@ -54,7 +54,7 @@ def get_deals(store_id):
             cur.execute(
                 """
                 SELECT item, price, unit, category, category_path, promotion, description, 
-                amount, min_amount, max_amount, package_count
+                amount, min_amount, max_amount, package_count, canonical_ingredient
                 FROM deal_items
                 WHERE deal_items.weekly_ad_id = %s
                 """,
@@ -191,11 +191,24 @@ def _save_deals(deals, weekly_ad_id, cur):
                 amount,
                 min_amount,
                 max_amount,
-                package_count
+                package_count,
+                canonical_ingredient
             )
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             ON CONFLICT (weekly_ad_id, source_product_id)
-            DO NOTHING
+            DO UPDATE SET
+                item = EXCLUDED.item,
+                unit = EXCLUDED.unit,
+                category = EXCLUDED.category,
+                category_path = EXCLUDED.category_path,
+                price = EXCLUDED.price,
+                promotion = EXCLUDED.promotion,
+                description = EXCLUDED.description,
+                amount = EXCLUDED.amount,
+                min_amount = EXCLUDED.min_amount,
+                max_amount = EXCLUDED.max_amount,
+                package_count = EXCLUDED.package_count,
+                canonical_ingredient = EXCLUDED.canonical_ingredient
             """,
             (
                 weekly_ad_id,
@@ -210,7 +223,8 @@ def _save_deals(deals, weekly_ad_id, cur):
                 deal['amount'],
                 deal['min_amount'],
                 deal['max_amount'],
-                deal['package_count']
+                deal['package_count'],
+                deal['canonical_ingredient']
             )
         )
 
