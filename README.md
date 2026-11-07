@@ -1,301 +1,352 @@
 # SuperMarket Deals
 
-SuperMarket Deals is a grocery meal-planning application that uses weekly supermarket deals to help users find discounted groceries and generate meal recommendations.
+SuperMarket Deals started as a Python command-line project for answering a question I run into every week: what can I cook based on what is actually on sale?
 
-I started this project as a way to practice Python while solving a real-world problem: deciding what meals to make based on what is actually on sale that week. The project has grown from a command-line program using local JSON files into an application with a PostgreSQL database, a FastAPI backend, and Docker support.
+The first version used local JSON files and a small list of recipes. Since then, I have been rebuilding it as a web application that pulls current grocery deals, stores them in PostgreSQL, matches those deals against recipe ingredients, and recommends meals based on the matches it finds.
 
-## Features
+The project is still in development. Safeway is currently the retailer I use for testing.
 
-The application currently supports:
+## What it does
 
-- Searching for participating grocery stores
-- Viewing weekly grocery deals
-- Searching deals by item name
-- Matching recipe ingredients against weekly deals
-- Selecting the cheapest matching deal for an ingredient
-- Ranking recipes based on available discounted ingredients
-- Calculating estimated costs for matched ingredients
-- Identifying ingredients that still need to be purchased
-- Combining missing ingredients into a shopping list
-- Generating a requested number of meal recommendations
-- Accessing grocery and meal-planning features through a FastAPI API
-- Running the application through a command-line interface
-- Connecting to a hosted PostgreSQL database
-- Running the application inside Docker
+A user enters a ZIP code and chooses a nearby store. The backend gets the store's current weekly ad and saves its deals to the database.
 
-## How It Works
+Those deals can then be browsed in the React frontend or used to generate a meal plan.
 
-The application follows this general flow:
+For meal planning, the backend compares the ingredients in each recipe against ingredients identified in the current weekly deals. Recipes with more discounted ingredients are ranked higher.
+
+The generated meal plan shows:
+
+- Recipes that match the current deals
+- Which recipe ingredients are on sale
+- The grocery product associated with each match
+- The sale price
+- Ingredients that are still needed
+- A combined shopping list for the selected meals
+
+## Current flow
 
 ```text
-Store
-  ↓
-Weekly Ad
-  ↓
-Grocery Deals
-  ↓
-Recipe Matching
-  ↓
-Meal Recommendations
-  ↓
-Shopping List
+ZIP code
+   |
+   v
+Nearby Safeway stores
+   |
+   v
+Selected store
+   |
+   v
+Current weekly ad
+   |
+   v
+Normalized grocery deals
+   |
+   +--------------------+
+   |                    |
+   v                    v
+Browse deals       Match recipes
+                        |
+                        v
+                  Rank recipes
+                        |
+                        v
+                   Meal plan
+                        |
+                        v
+                  Shopping list
 ```
 
-Weekly grocery deals are stored in PostgreSQL and associated with a store and weekly advertisement.
+## Grocery data
 
-When generating a meal plan, the application compares recipe ingredients against the available deals. Ingredient and deal names are split into words so that items with slightly different names can still match.
+The grocery side of the project currently uses Safeway publication data retrieved through Flipp endpoints.
+
+When a store is selected, the backend checks PostgreSQL for a weekly ad that is still valid for that store.
+
+If a current ad already exists, the existing data is reused.
+
+If the previous ad has expired, the backend looks for the current publication, retrieves its products, normalizes the usable food deals, and saves the new weekly ad and its deal items.
+
+Weekly ads are identified using the source publication ID so the same publication can be updated without creating duplicate records.
+
+## Recipes
+
+Recipes currently come from [TheMealDB](https://www.themealdb.com/).
+
+The import code retrieves the full recipe information, extracts its ingredients and measurements, and stores the results in PostgreSQL.
+
+The current database contains 452 recipes across:
+
+- Beef
+- Chicken
+- Pork
+- Seafood
+- Vegetarian
+- Pasta
+- Breakfast
+
+Recipes are stored separately from their ingredients so they can be queried and reconstructed from the database when a meal plan is generated.
+
+## Ingredient matching
+
+One of the harder parts of this project has been dealing with the different ways the same ingredient can be written.
+
+A recipe might contain:
+
+```text
+Chicken Breasts
+```
+
+while a grocery deal might be listed as:
+
+```text
+Boneless Skinless Chicken Breast
+```
+
+Simple string equality would treat those as different ingredients.
+
+The normalization code uses a grocery vocabulary containing canonical ingredient names and their known aliases. Text is cleaned and normalized before known terms are identified.
 
 For example:
 
 ```text
-Recipe Ingredient:
-Chicken Breast
-
-Weekly Deal:
-Boneless Chicken Breast
+chicken breasts
+       |
+       v
+chicken breast
+       |
+       v
+canonical ingredient: chicken breast
 ```
 
-The application determines whether enough words match, checks that the units are compatible, and selects the cheapest matching deal.
+The vocabulary currently contains 370 canonical ingredients.
 
-Recipes are then ranked based on how many ingredients have matching grocery deals and how many ingredients are still missing.
+I also keep ingredient categories separate from the vocabulary. This allows an ingredient such as `chicken breast` to have a canonical identity while also belonging to a broader category such as `poultry`.
 
-## Project Architecture
+Unknown ingredients are left unmatched instead of forcing them into a category that may be wrong.
 
-The project is separated into modules so that the same business logic can be used by both the command-line application and the API.
+The current recipe ingredient audit recognizes 99.88% of the ingredient uses in the recipe database.
+
+## Avoiding bad grocery matches
+
+Finding a known ingredient word inside a grocery product does not automatically mean the product should count as that ingredient.
+
+For example, a product containing the word `chicken` could be raw chicken, but it could also be a prepared meal or another packaged product.
+
+`non_ingredient_products.json` contains phrases used to reject known false positives before a grocery product is assigned a canonical ingredient.
+
+This is intentionally conservative. Missing a questionable match is preferable to recommending a recipe because an unrelated grocery product happened to contain the same word.
+
+## Meal plan ranking
+
+When a meal plan is requested, the backend first builds a lookup containing the cheapest current deal for each canonical ingredient.
+
+Each recipe ingredient is normalized and checked against that lookup.
+
+For every recipe, the matcher keeps track of:
+
+- Matched ingredients
+- Missing ingredients
+- Number of matches
+- Percentage of matchable ingredients on sale
+
+A recipe needs at least one discounted ingredient to be included in the recommendations.
+
+Recipes are currently ranked using the number of matching ingredients, match percentage, and number of missing ingredients.
+
+Water is ignored when calculating recipe matches.
+
+## Matching performance
+
+As the recipe database and grocery vocabulary grew, meal-plan generation became noticeably slower.
+
+With 452 recipes, one meal-plan request was taking about:
 
 ```text
-                    PostgreSQL
-                        │
-                   database.py
-                        │
-              ┌─────────┴─────────┐
-              │                   │
-           main.py              api.py
-             CLI                FastAPI
-              │                   │
-              └─────────┬─────────┘
-                        │
-              Application Logic
-                        │
-          ┌─────────────┼─────────────┐
-          │             │             │
-   search_deals.py  meal_plan.py  view_deals.py
+7.65 seconds
 ```
 
-This separation allows the project to grow beyond the original command-line application without rewriting the core grocery and meal-planning logic.
+The slowdown came largely from repeatedly rebuilding vocabulary information and scanning aliases during ingredient normalization.
 
-## File Structure
+I changed the normalizer so vocabulary indexes are built once when the backend starts. Normalized aliases can then be mapped directly to their canonical ingredients. Frequently repeated normalization results are also cached in memory.
+
+The meal planner separately builds a lookup for the cheapest deal associated with each canonical ingredient instead of scanning every deal for every recipe ingredient.
+
+After those changes, the same meal-plan generation path dropped to approximately:
+
+```text
+1.32 seconds
+```
+
+The recipe normalization audit still reports 99.88% coverage after the optimization.
+
+## Project structure
 
 ```text
 SuperMarket_Deals/
-│
-├── data/
-│   └── Store deal data
-│
-├── api.py
-├── database.py
-├── import_deals.py
-├── main.py
-├── meal_plan.py
-├── search_deals.py
-├── store_search.py
-├── view_deals.py
-│
-├── recipes.json
-├── weekly_deals.json
-│
-├── requirements.txt
-├── Dockerfile
-├── .dockerignore
-├── .gitignore
-└── README.md
+|
+|-- api.py
+|-- database.py
+|-- meal_plan.py
+|-- recipe_source.py
+|-- safeway_deals.py
+|-- search_deals.py
+|-- store_discovery.py
+|
+|-- normalization/
+|   |-- deal_normalizer.py
+|   |-- ingredient_normalizer.py
+|   |-- text_normalizer.py
+|   |
+|   `-- data/
+|       |-- grocery_vocabulary.json
+|       |-- ingredient_categories.json
+|       |-- non_ingredient_products.json
+|       |-- normalization_cache.json
+|       `-- normalization_review.example.json
+|
+|-- scripts/
+|   |-- audit_ingredient_categories.py
+|   |-- audit_recipe_ingredients.py
+|   `-- check_deal_normalization.py
+|
+|-- tests/
+|   |-- test_deal_normalizer.py
+|   |-- test_ingredient_normalizer.py
+|   |-- test_meal_plan.py
+|   `-- test_text_normalizer.py
+|
+|-- frontend/
+|   |-- public/
+|   |-- src/
+|   |   |-- pages/
+|   |   |-- App.jsx
+|   |   |-- App.css
+|   |   |-- index.css
+|   |   `-- main.jsx
+|   |
+|   |-- package.json
+|   `-- vite.config.js
+|
+|-- data/
+|   `-- safeway_sample.json
+|
+|-- Dockerfile
+|-- requirements.txt
+|-- requirements-dev.txt
+`-- README.md
 ```
 
-### `main.py`
+## Backend
 
-Runs the command-line version of the application.
+The API uses FastAPI.
 
-It provides the main menu and connects the database, deal search, weekly deal display, and meal-planning features.
-
-### `api.py`
-
-Contains the FastAPI routes.
-
-The API exposes grocery deal and meal-planning functionality so that the application can eventually be used by a web or mobile frontend.
-
-### `database.py`
-
-Handles the PostgreSQL database connection and database queries.
-
-Database credentials are loaded from environment variables rather than being stored directly in the source code.
-
-### `meal_plan.py`
-
-Contains the main meal recommendation logic.
-
-It:
-
-- Compares recipe ingredients against grocery deals
-- Finds compatible deal matches
-- Chooses the cheapest matching deal
-- Determines missing ingredients
-- Ranks recipes
-- Calculates matched ingredient costs
-- Builds the shopping list
-
-### `search_deals.py`
-
-Searches structured grocery deal data by item name.
-
-The function returns structured deal information so that the same search logic can be used by both the CLI and API.
-
-### `view_deals.py`
-
-Formats grocery deal data into readable output for the command-line application.
-
-### `store_search.py`
-
-Searches locally stored grocery deal folders and loads weekly deal information from JSON files.
-
-This is primarily used when working with locally stored deal data.
-
-### `import_deals.py`
-
-Imports locally stored grocery deals into PostgreSQL and associates them with the appropriate weekly advertisement.
-
-Duplicate deal records are ignored during import.
-
-### `recipes.json`
-
-Contains the recipe information used by the meal-planning algorithm, including ingredient names, quantities, and units.
-
-## Database Structure
-
-The PostgreSQL database currently uses three primary tables:
-
-```text
-stores
-   │
-   │ one-to-many
-   ↓
-weekly_ads
-   │
-   │ one-to-many
-   ↓
-deal_items
-```
-
-### Stores
-
-Stores basic information about participating supermarkets.
-
-### Weekly Ads
-
-Associates a weekly advertisement with a specific store and date range.
-
-### Deal Items
-
-Stores the individual grocery items belonging to a weekly advertisement, including:
-
-- Item name
-- Price
-- Unit
-- Category
-
-## API
-
-The backend is built using FastAPI.
-
-Start the development server with:
+Start it locally with:
 
 ```bash
 uvicorn api:app --reload
 ```
 
-The API will be available locally at:
+By default it runs at:
 
 ```text
 http://127.0.0.1:8000
 ```
 
-FastAPI automatically generates interactive API documentation at:
+FastAPI documentation is available at:
 
 ```text
 http://127.0.0.1:8000/docs
 ```
 
-### Current Endpoints
-
-Check that the API is running:
+Current routes include:
 
 ```http
 GET /
+GET /stores
+GET /stores/nearby?postal_code={zip_code}
+GET /stores/{store_id}/deals
+GET /stores/{store_id}/deals/search?item={item}
+GET /stores/{store_id}/meal-plan?meals={number}
 ```
 
-Get weekly deals for a store:
+The meal count is currently limited to 1 through 14.
 
-```http
-GET /stores/{store_name}/deals
-```
+## Frontend
 
-Example:
+The frontend uses React and Vite.
 
-```http
-GET /stores/safeway/deals
-```
-
-Search a store's weekly deals:
-
-```http
-GET /stores/{store_name}/deals/search?item={item}
-```
-
-Example:
-
-```http
-GET /stores/safeway/deals/search?item=chicken
-```
-
-Generate meal recommendations:
-
-```http
-GET /stores/{store_name}/meal-plan?meals={number}
-```
-
-Example:
-
-```http
-GET /stores/safeway/meal-plan?meals=3
-```
-
-## Running the CLI
-
-Create and activate a Python virtual environment, then install the dependencies:
+From the `frontend` directory:
 
 ```bash
-python -m pip install -r requirements.txt
+npm install
+npm run dev
 ```
 
-Run the application:
-
-```bash
-python main.py
-```
-
-The CLI provides the following menu:
+The development frontend runs separately from FastAPI and currently expects the backend at:
 
 ```text
-1. View Weekly Deals
-2. Search Deals
-3. Generate Meal Plan
-4. Exit
+http://127.0.0.1:8000
 ```
 
-## Environment Variables
+The frontend currently includes:
 
-Database credentials are stored in a local `.env` file.
+### Home
 
-The application expects:
+- Store search
+- Store selection
+- Weekly deal preview
+- Meal-plan controls
+
+### Weekly Deals
+
+- Deal search
+- Category filtering
+- Current sale information
+
+### Meal Plan
+
+- Recipe recommendations
+- Recipe images
+- Deal matches
+- Missing ingredients
+- Shopping list
+
+The selected store and ZIP code are stored in the browser so the user does not have to select the store again when moving between pages.
+
+Meal-plan results are currently passed through React Router state. Refreshing the meal-plan page directly will clear the generated plan. Persistent meal plans are not implemented yet.
+
+## Database
+
+The project uses PostgreSQL hosted through Supabase.
+
+The main relationships are:
+
+```text
+stores
+   |
+   v
+weekly_ads
+   |
+   v
+deal_items
+
+
+recipes
+   |
+   v
+recipe_ingredients
+```
+
+A store can have multiple weekly ads over time, and each weekly ad contains its own deal items.
+
+Recipes and recipe ingredients are stored independently from grocery deals. The canonical ingredient vocabulary is what allows the two datasets to be compared.
+
+Database access is handled through `psycopg` and `psycopg_pool`.
+
+## Environment variables
+
+Local credentials and API configuration are kept in `.env`, which is excluded from Git.
+
+The backend currently expects database configuration along with the credentials needed by the grocery data requests.
 
 ```text
 DB_HOST=
@@ -303,72 +354,63 @@ DB_PORT=
 DB_NAME=
 DB_USER=
 DB_PASSWORD=
+
+FLIPP_ACCESS_TOKEN=
 ```
 
-The `.env` file is excluded from Git and should never be committed to the repository.
+Actual credentials should not be committed to the repository.
 
-## Docker
+## Tests and audits
 
-The application can also run inside a Docker container.
+The project has pytest coverage for the main normalization and meal-planning behavior.
 
-Build the image:
+Run the tests with:
 
 ```bash
-docker build -t supermarket-deals .
+pytest
 ```
 
-Run the command-line application while providing the database environment variables:
+There are also scripts for checking the data itself.
+
+Recipe ingredient coverage:
 
 ```bash
-docker run -it --env-file .env supermarket-deals
+python scripts/audit_recipe_ingredients.py
 ```
 
-This provides a reproducible Python environment while the application connects to the hosted PostgreSQL database.
+Ingredient category consistency:
 
-## Technologies
+```bash
+python scripts/audit_ingredient_categories.py
+```
 
-- **Python** - Core application logic
-- **FastAPI** - REST API
-- **PostgreSQL** - Grocery deal database
-- **Psycopg** - PostgreSQL database connection
-- **Supabase** - Hosted PostgreSQL database
-- **Docker** - Containerized application environment
-- **JSON** - Recipe and local deal data
-- **Git / GitHub** - Version control
+Deal normalization against the saved Safeway sample:
 
-## Current Development
+```bash
+python scripts/check_deal_normalization.py
+```
 
-The project originally started as a command-line Python application using JSON files.
+I use these separately from the unit tests because some problems only become obvious when the normalization code is run against the larger recipe or grocery datasets.
 
-It is currently being expanded into a full-stack application.
+## Main tools
 
-The current development focus is separating the meal-planning calculations from command-line formatting so that the API can return structured JSON data.
+- Python
+- FastAPI
+- PostgreSQL
+- Supabase
+- Psycopg
+- React
+- Vite
+- JavaScript
+- TheMealDB
+- Flipp grocery data
+- pytest
+- Docker
 
-## Future Development
+## Where it is now
 
-Planned improvements include:
+The main path works from store selection through meal-plan generation.
 
-- Structured JSON meal-plan responses
-- Improved recipe and grocery matching
-- Current weekly-ad filtering
-- Additional grocery stores
-- Automated or semi-automated deal ingestion
-- Improved database access patterns
-- Web frontend
-- User-selected stores and meal preferences
-- Better cost comparisons between stores
-- Deployment of the API and frontend
+Safeway is still the only grocery retailer being tested. The recipe matcher is based on a manually maintained vocabulary, and grocery product classification is intentionally conservative.
 
-## Project Goal
-
-The long-term goal is to make grocery planning easier by connecting supermarket discounts directly to meal decisions.
-
-Instead of asking:
-
-> "What should I cook this week?"
-
-the application is designed to help answer:
-
-> "What can I cook this week based on what is currently on sale?"
-
-The project also serves as an ongoing opportunity to practice backend development, databases, APIs, Docker, application architecture, and eventually full-stack development.
+Before expanding to more retailers or adding more features, I am working through the existing code and data pipeline to make sure the current version stays understandable and testable as the project grows.
