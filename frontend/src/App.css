@@ -1,151 +1,560 @@
+/* --------------------------------------------------
+   App Layout
+-------------------------------------------------- */
+
 .app {
-  max-width: 1200px;
+  width: min(1200px, 100%);
   margin: 0 auto;
-  padding: 32px;
+  padding: 48px 32px 72px;
 }
 
-/* Store */
+.section-description,
+.page-description {
+  color: var(--text-muted);
+}
+
+.error-message {
+  margin-top: 12px;
+  color: var(--error);
+}
+
+.back-link {
+  display: inline-flex;
+  margin-bottom: 32px;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.primary-link {
+  display: inline-flex;
+  margin-top: 20px;
+  font-weight: 600;
+}
+
+.empty-page {
+  max-width: 720px;
+}
+
+
+/* --------------------------------------------------
+   Buttons
+-------------------------------------------------- */
+
+.primary-button,
+.secondary-button,
+.generate-button {
+  min-height: 44px;
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-weight: 600;
+  transition:
+    background-color 150ms ease,
+    border-color 150ms ease,
+    transform 150ms ease;
+}
+
+.primary-button,
+.generate-button {
+  border: 1px solid var(--green);
+  background: var(--green);
+  color: #ffffff;
+}
+
+.primary-button:hover:not(:disabled),
+.generate-button:hover:not(:disabled) {
+  background: var(--green-dark);
+  border-color: var(--green-dark);
+}
+
+.secondary-button {
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  color: var(--text);
+}
+
+.secondary-button:hover:not(:disabled) {
+  border-color: var(--green);
+  color: var(--green);
+}
+
+.primary-button:active:not(:disabled),
+.secondary-button:active:not(:disabled),
+.generate-button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.primary-button:disabled,
+.secondary-button:disabled,
+.generate-button:disabled {
+  opacity: 0.55;
+}
+
+
+/* --------------------------------------------------
+   Inputs
+-------------------------------------------------- */
+
+input,
+select {
+  min-height: 44px;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  outline: none;
+  background: var(--surface);
+  color: var(--text);
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease;
+}
+
+input {
+  padding: 10px 12px;
+}
+
+select {
+  padding: 10px 36px 10px 12px;
+}
+
+input:focus,
+select:focus {
+  border-color: var(--green);
+  box-shadow: 0 0 0 3px var(--green-light);
+}
+
+
+/* --------------------------------------------------
+   Store Search
+-------------------------------------------------- */
+
+.store-search {
+  max-width: 680px;
+  padding: 56px 0 64px;
+}
+
+.store-search h1 {
+  max-width: 600px;
+}
+
+.store-search .section-description {
+  margin-bottom: 24px;
+  font-size: 1.05rem;
+}
+
+.store-search-controls {
+  display: flex;
+  gap: 10px;
+}
+
+.store-search-controls input {
+  width: 160px;
+}
+
+.store-select {
+  display: block;
+  width: min(100%, 500px);
+  margin-top: 16px;
+}
+
+
+/* --------------------------------------------------
+   Selected Store
+-------------------------------------------------- */
 
 .store-info {
-  margin-bottom: 32px;
+  position: relative;
+  margin-bottom: 48px;
+  padding: 28px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--surface-soft);
 }
 
-.store-info h2 {
+.store-label {
+  margin-bottom: 6px;
+  color: var(--green);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.store-name {
   margin-bottom: 4px;
+  font-size: 1.75rem;
 }
 
-.store-info p {
-  margin: 4px 0;
+.store-location {
+  margin-bottom: 2px;
+  color: var(--text-muted);
 }
 
-/* Section Headers */
+.store-deal-count {
+  margin-bottom: 18px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+
+/* --------------------------------------------------
+   Section Headers
+-------------------------------------------------- */
 
 .section-header {
   display: flex;
+  align-items: flex-end;
   justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
+  gap: 24px;
+  margin-bottom: 20px;
 }
 
 .section-header h2 {
-  margin: 0;
+  margin-bottom: 4px;
+}
+
+.section-header .section-description {
+  margin-bottom: 0;
+}
+
+.section-link {
+  flex-shrink: 0;
+  font-weight: 600;
 }
 
 .weekly-deals-preview {
-  margin-bottom: 32px;
+  margin-bottom: 48px;
 }
 
-/* Meal Planner */
+
+/* --------------------------------------------------
+   Deal Cards
+-------------------------------------------------- */
+
+.deal-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.deal-card {
+  display: flex;
+  min-height: 180px;
+  flex-direction: column;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  text-align: left;
+  transition:
+    border-color 150ms ease,
+    box-shadow 150ms ease,
+    transform 150ms ease;
+}
+
+.deal-card:hover {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-sm);
+  transform: translateY(-2px);
+}
+
+.deal-category {
+  margin-bottom: 10px;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.deal-name {
+  margin-bottom: 20px;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.deal-price {
+  margin-top: auto;
+  margin-bottom: 4px;
+  color: var(--green);
+  font-size: 1.45rem;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+
+.deal-promotion {
+  margin-bottom: 0;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+
+/* --------------------------------------------------
+   Meal Planner
+-------------------------------------------------- */
 
 .planner {
-  padding: 24px;
-  border: 1px solid #ddd;
-  border-radius: 12px;
-  margin-bottom: 32px;
+  padding: 28px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--green-light);
+}
+
+.planner-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
 }
 
 .planner h2 {
-  margin-top: 0;
+  margin-bottom: 6px;
+}
+
+.planner .section-description {
+  margin-bottom: 0;
+}
+
+.planner-actions {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-shrink: 0;
 }
 
 .planner-controls {
   display: flex;
-  gap: 20px;
-  margin-bottom: 20px;
 }
 
 .planner-controls label {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  font-weight: 600;
 }
 
 .planner-controls input {
-  width: 60px;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  font-size: 16px;
+  width: 90px;
+  background: var(--surface);
 }
 
-.generate-button {
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-size: 16px;
-  cursor: pointer;
-  border: none;
-  background-color: seagreen;
-  color: white;
+
+/* --------------------------------------------------
+   Deals Page
+-------------------------------------------------- */
+
+.deals-page-header {
+  margin-bottom: 32px;
 }
 
-.generate-button:hover {
-  background-color: #257347;
+.page-eyebrow {
+  margin-bottom: 8px;
+  color: var(--green);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
 }
 
-.generate-button:disabled {
-  background-color: #6F8F7A;
-  cursor: not-allowed;
-  opacity: 0.7;
+.deals-page-header h1 {
+  margin-bottom: 8px;
 }
 
-/* Weekly Deals */
-
-.deal-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 15px;
-}
-
-.deal-card {
-  border: 1px solid #D3D3D3;
-  border-radius: 12px;
-  padding: 15px;
-  text-align: left;
-}
-
-.deal-card p {
-  color: #257347;
-  font-size: 20px;
-  font-weight: 500;
-  margin-top: 12px;
-  margin-bottom: 0;
-}
-
-/* Meal Plan */
-
-.meal-plan-header {
-  margin: 24px 0 32px;
-}
-
-.meal-plan-header h1 {
+.deals-page-header .page-description {
   margin-bottom: 4px;
 }
 
-.meal-plan-header p {
-  margin-top: 0;
+.deal-count {
+  margin-bottom: 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.deal-filters {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.deal-search {
+  width: min(100%, 420px);
+}
+
+.category-filter {
+  width: min(100%, 260px);
+}
+
+
+/* --------------------------------------------------
+   Meal Plan Header
+-------------------------------------------------- */
+
+.meal-plan-header {
+  margin: 0 0 40px;
+}
+
+.meal-plan-header h1 {
+  margin-bottom: 8px;
+}
+
+.meal-plan-header p:last-child {
+  color: var(--text-muted);
+}
+
+
+/* --------------------------------------------------
+   Recommended Meals
+-------------------------------------------------- */
+
+.recommended-meals {
+  margin-bottom: 56px;
+}
+
+.recommended-meals > h2 {
+  margin-bottom: 20px;
 }
 
 .meal-card {
-  border: 1px solid #ddd;
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 16px;
+  margin-bottom: 24px;
+  padding: 24px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--surface);
+  box-shadow: var(--shadow-sm);
   text-align: left;
+}
+
+.meal-card-top {
+  display: flex;
+  align-items: stretch;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.meal-image-container {
+  width: 220px;
+  min-width: 220px;
+  height: 165px;
+  overflow: hidden;
+  border-radius: 12px;
+  background: var(--surface-soft);
+}
+
+.meal-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.meal-card-summary {
+  display: flex;
+  min-width: 0;
+  flex: 1;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .meal-card-header {
   display: flex;
+  align-items: flex-start;
   justify-content: space-between;
-  align-items: center;
-  gap: 20px;
+  gap: 24px;
+}
+
+.meal-card-header h3 {
+  margin-bottom: 4px;
+  font-size: 1.35rem;
+}
+
+.meal-details {
+  margin-bottom: 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
 }
 
 .match-badge {
-  background-color: #e8f3ec;
-  color: #257347;
-  padding: 6px 12px;
-  border-radius: 12px;
-  white-space: nowrap;
+  flex-shrink: 0;
+  padding: 7px 12px;
+  border: 1px solid rgba(37, 115, 71, 0.18);
+  border-radius: 999px;
+  background: var(--green-light);
+  color: var(--green-dark);
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.match-summary {
+  margin-top: 14px;
+  margin-bottom: 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+
+/* --------------------------------------------------
+   Matched Ingredients
+-------------------------------------------------- */
+
+.matched-ingredients {
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+.matched-ingredients h4,
+.missing-ingredients h4 {
+  margin-bottom: 14px;
+  font-size: 0.8rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.matched-ingredients h4 {
+  color: var(--green);
+}
+
+.matched-deal {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.matched-deal:last-child {
+  border-bottom: 0;
+}
+
+.ingredient-measurement {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.matched-product {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  margin-top: 6px;
+  padding-left: 20px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.matched-product strong {
+  flex-shrink: 0;
+  color: var(--green);
+}
+
+
+/* --------------------------------------------------
+   Missing Ingredients
+-------------------------------------------------- */
+
+.missing-ingredients {
+  margin-top: 18px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+.missing-ingredients h4 {
+  color: var(--text-muted);
 }
 
 .ingredient-tags {
@@ -155,36 +564,172 @@
 }
 
 .ingredient-tags span {
-  background-color: #f3f3f3;
-  padding: 6px 10px;
+  padding: 7px 10px;
+  border: 1px solid var(--border);
   border-radius: 8px;
+  background: var(--surface-soft);
+  color: var(--text-muted);
+  font-size: 0.85rem;
 }
 
-/* Shopping List */
+
+/* --------------------------------------------------
+   Shopping List
+-------------------------------------------------- */
 
 .shopping-list {
-  margin-top: 32px;
+  margin-top: 48px;
+}
+
+.shopping-list h2 {
+  margin-bottom: 16px;
 }
 
 .shopping-list-item {
   display: flex;
   justify-content: space-between;
-  padding: 12px 0;
-  border-bottom: 1px solid #ddd;
+  gap: 24px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border);
 }
 
-/* Smaller Screens */
+.shopping-list-item span:last-child {
+  color: var(--text-muted);
+  text-align: right;
+}
 
-@media (max-width: 750px) {
+
+/* --------------------------------------------------
+   Tablet
+-------------------------------------------------- */
+
+@media (max-width: 900px) {
   .app {
-    padding: 20px;
+    padding: 36px 24px 56px;
+  }
+
+  .deal-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .planner-content {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .planner-actions {
+    width: 100%;
+  }
+
+  .meal-image-container {
+    width: 190px;
+    min-width: 190px;
+    height: 145px;
+  }
+}
+
+
+/* --------------------------------------------------
+   Mobile
+-------------------------------------------------- */
+
+@media (max-width: 600px) {
+  .app {
+    padding: 24px 18px 48px;
+  }
+
+  .store-search {
+    padding: 32px 0 48px;
+  }
+
+  .store-search-controls {
+    flex-direction: column;
+  }
+
+  .store-search-controls input {
+    width: 100%;
+  }
+
+  .store-search-controls button {
+    width: 100%;
+  }
+
+  .section-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 10px;
   }
 
   .deal-grid {
     grid-template-columns: 1fr;
   }
 
+  .deal-card {
+    min-height: 160px;
+  }
+
+  .planner {
+    padding: 22px;
+  }
+
+  .planner-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .planner-controls {
+    width: 100%;
+  }
+
+  .planner-controls label {
+    width: 100%;
+  }
+
+  .planner-controls input {
+    width: 100%;
+  }
+
+  .generate-button {
+    width: 100%;
+  }
+
+  .deal-filters {
+    flex-direction: column;
+  }
+
+  .deal-search,
+  .category-filter {
+    width: 100%;
+  }
+
+  .meal-card {
+    padding: 18px;
+  }
+
+  .meal-card-top {
+    flex-direction: column;
+    gap: 18px;
+  }
+
+  .meal-image-container {
+    width: 100%;
+    min-width: 0;
+    height: auto;
+    aspect-ratio: 4 / 3;
+  }
+
   .meal-card-header {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .matched-product {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .shopping-list-item {
     align-items: flex-start;
   }
 }

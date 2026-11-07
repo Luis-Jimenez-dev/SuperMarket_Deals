@@ -1,106 +1,133 @@
-import { useState, useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
+
+const API_URL = 'http://127.0.0.1:8000'
 
 function HomePage() {
   const [deals, setDeals] = useState([])
   const [meals, setMeals] = useState(1)
 
   const [postalCode, setPostalCode] = useState(() => {
-    return localStorage.getItem("postalCode") ?? ""
+    return localStorage.getItem('postalCode') ?? ''
   })
 
   const [nearbyStores, setNearbyStores] = useState([])
 
   const [selectedStore, setSelectedStore] = useState(() => {
-    const savedStore = localStorage.getItem("selectedStore")
+    const savedStore = localStorage.getItem('selectedStore')
 
     return savedStore
       ? JSON.parse(savedStore)
       : null
   })
 
-  // If a saved store exists, deals will load when the page first opens
   const [dealsLoading, setDealsLoading] = useState(
     () => selectedStore !== null
   )
 
   const [mealPlanLoading, setMealPlanLoading] = useState(false)
 
-  // Error states
-  const [storeSearchError, setStoreSearchError] = useState("")
-  const [dealsError, setDealsError] = useState("")
-  const [mealPlanError, setMealPlanError] = useState("")
+  const [storeSearchError, setStoreSearchError] = useState('')
+  const [dealsError, setDealsError] = useState('')
+  const [mealPlanError, setMealPlanError] = useState('')
 
   const navigate = useNavigate()
 
-  // Find nearby stores using the ZIP code
+  async function getErrorMessage(response, fallbackMessage) {
+    try {
+      const errorData = await response.json()
+      return errorData.detail || fallbackMessage
+    } catch {
+      return fallbackMessage
+    }
+  }
+
   const findNearbyStores = async () => {
-    setStoreSearchError("")
+    const cleanedPostalCode = postalCode.trim()
+
+    setStoreSearchError('')
     setNearbyStores([])
+
+    if (!/^\d{5}$/.test(cleanedPostalCode)) {
+      setStoreSearchError('Enter a valid 5-digit ZIP code.')
+      return
+    }
 
     try {
       const response = await fetch(
-        `http://localhost:8000/stores/nearby?postal_code=${postalCode}`
+        `${API_URL}/stores/nearby?postal_code=${encodeURIComponent(cleanedPostalCode)}`
       )
 
       if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.detail)
+        const message = await getErrorMessage(
+          response,
+          'Unable to find nearby stores.'
+        )
+
+        throw new Error(message)
       }
 
       const data = await response.json()
 
       setNearbyStores(data)
-      localStorage.setItem("postalCode", postalCode)
+      localStorage.setItem('postalCode', cleanedPostalCode)
+      setPostalCode(cleanedPostalCode)
 
     } catch (error) {
-      console.error("Failed to find nearby stores:", error)
-      setStoreSearchError(error.message)
+      console.error('Failed to find nearby stores:', error)
+
+      setStoreSearchError(
+        error instanceof Error
+          ? error.message
+          : 'Unable to find nearby stores.'
+      )
     }
   }
 
-  // Save the selected store and prepare to load its deals
   const selectStore = (store) => {
     setDealsLoading(true)
     setDeals([])
-    setDealsError("")
-    setMealPlanError("")
+    setDealsError('')
+    setMealPlanError('')
     setSelectedStore(store)
 
     localStorage.setItem(
-      "selectedStore",
+      'selectedStore',
       JSON.stringify(store)
     )
   }
 
-  // Clear the current store and show nearby stores again
   const changeStore = () => {
     setSelectedStore(null)
     setDeals([])
+    setNearbyStores([])
     setDealsLoading(false)
-    setDealsError("")
-    setMealPlanError("")
+    setDealsError('')
+    setMealPlanError('')
 
-    localStorage.removeItem("selectedStore")
+    localStorage.removeItem('selectedStore')
 
     if (postalCode) {
       findNearbyStores()
     }
   }
 
-  // Load deals whenever the selected store changes
   useEffect(() => {
     if (!selectedStore) {
       return
     }
 
     fetch(
-      `http://127.0.0.1:8000/stores/${selectedStore.store_id}/deals`
+      `${API_URL}/stores/${selectedStore.store_id}/deals`
     )
       .then(async response => {
         if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(errorData.detail)
+          const message = await getErrorMessage(
+            response,
+            'Unable to load deals.'
+          )
+
+          throw new Error(message)
         }
 
         return response.json()
@@ -109,8 +136,13 @@ function HomePage() {
         setDeals(data)
       })
       .catch(error => {
-        console.error("Failed to load deals:", error)
-        setDealsError(error.message)
+        console.error('Failed to load deals:', error)
+
+        setDealsError(
+          error instanceof Error
+            ? error.message
+            : 'Unable to load deals.'
+        )
       })
       .finally(() => {
         setDealsLoading(false)
@@ -118,8 +150,7 @@ function HomePage() {
 
   }, [selectedStore])
 
-  // Generate a meal plan using the currently selected store
-  function generateMealPlan() {
+  async function generateMealPlan() {
     if (
       !selectedStore ||
       meals < 1 ||
@@ -130,87 +161,121 @@ function HomePage() {
       return
     }
 
-    setMealPlanError("")
+    setMealPlanError('')
     setMealPlanLoading(true)
 
-    fetch(
-      `http://127.0.0.1:8000/stores/${selectedStore.store_id}/meal-plan?meals=${meals}`
-    )
-      .then(async response => {
-        if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(errorData.detail)
-        }
+    try {
+      const response = await fetch(
+        `${API_URL}/stores/${selectedStore.store_id}/meal-plan?meals=${meals}`
+      )
 
-        return response.json()
+      if (!response.ok) {
+        const message = await getErrorMessage(
+          response,
+          'Unable to build a meal plan.'
+        )
+
+        throw new Error(message)
+      }
+
+      const data = await response.json()
+
+      navigate('/meal-plan', {
+        state: {
+          mealPlan: data,
+          store: selectedStore,
+        },
       })
-      .then(data => {
-        navigate('/meal-plan', {
-          state: {
-            mealPlan: data,
-            store: selectedStore
-          }
-        })
-      })
-      .catch(error => {
-        console.error("Failed to generate meal plan:", error)
-        setMealPlanError(error.message)
-      })
-      .finally(() => {
-        setMealPlanLoading(false)
-      })
+
+    } catch (error) {
+      console.error('Failed to generate meal plan:', error)
+
+      setMealPlanError(
+        error instanceof Error
+          ? error.message
+          : 'Unable to build a meal plan.'
+      )
+
+    } finally {
+      setMealPlanLoading(false)
+    }
   }
 
   return (
     <div className="app">
-
       {selectedStore ? (
         <section className="store-info">
-          <p>Shopping at:</p>
+          <p className="store-label">Shopping at</p>
 
-          <h2>{selectedStore.name}</h2>
+          <h2 className="store-name">
+            {selectedStore.name}
+          </h2>
 
-          <p>
-            {selectedStore.city}, {selectedStore.state}
-          </p>
+          {selectedStore.city && (
+            <p className="store-location">
+              {selectedStore.city}
+              {selectedStore.state && `, ${selectedStore.state}`}
+            </p>
+          )}
 
           {dealsLoading ? (
-            <p>Loading this week's deals...</p>
+            <p className="store-deal-count">
+              Loading this week's deals...
+            </p>
           ) : dealsError ? (
-            <p>Deals unavailable</p>
+            <p className="store-deal-count">
+              Deals unavailable
+            </p>
           ) : (
-            <p>
+            <p className="store-deal-count">
               {deals.length === 1
-                ? "1 deal found"
+                ? '1 deal found'
                 : `${deals.length} deals found`}
             </p>
           )}
 
           <button
+            type="button"
+            className="secondary-button"
             onClick={changeStore}
             disabled={dealsLoading}
           >
             Change Store
           </button>
         </section>
-
       ) : (
         <section className="store-search">
-          <p>Find a store near you</p>
+          <h1>Find your weekly deals</h1>
 
-          <input
-            type="text"
-            value={postalCode}
-            maxLength={5}
-            placeholder="ZIP code"
-            onChange={(event) =>
-              setPostalCode(event.target.value)
-            }
-          />
+          <p className="section-description">
+            Enter your ZIP code to find a store near you.
+          </p>
 
-          <button onClick={findNearbyStores}>
-            Find Stores
-          </button>
+          <div className="store-search-controls">
+            <input
+              type="text"
+              inputMode="numeric"
+              value={postalCode}
+              maxLength={5}
+              placeholder="ZIP code"
+              aria-label="ZIP code"
+              onChange={(event) => {
+                const value = event.target.value
+                  .replace(/\D/g, '')
+                  .slice(0, 5)
+
+                setPostalCode(value)
+              }}
+            />
+
+            <button
+              type="button"
+              className="primary-button"
+              onClick={findNearbyStores}
+            >
+              Find Stores
+            </button>
+          </div>
 
           {storeSearchError && (
             <p className="error-message">
@@ -220,10 +285,12 @@ function HomePage() {
 
           {nearbyStores.length > 0 && (
             <select
+              className="store-select"
               defaultValue=""
+              aria-label="Choose a nearby store"
               onChange={(event) => {
                 const store = nearbyStores.find(
-                  (store) =>
+                  store =>
                     store.store_id === Number(event.target.value)
                 )
 
@@ -236,12 +303,14 @@ function HomePage() {
                 Choose a store
               </option>
 
-              {nearbyStores.map((store) => (
+              {nearbyStores.map(store => (
                 <option
                   key={store.store_id}
                   value={store.store_id}
                 >
-                  {store.name} — {store.distance} miles
+                  {store.name}
+                  {store.distance != null &&
+                    ` — ${Number(store.distance).toFixed(1)} miles`}
                 </option>
               ))}
             </select>
@@ -250,101 +319,122 @@ function HomePage() {
       )}
 
       <section className="weekly-deals-preview">
-
         <div className="section-header">
-          <h2>Weekly Deals</h2>
+          <div>
+            <h2>Weekly Deals</h2>
+            <p className="section-description">
+              See what's on sale at your selected store.
+            </p>
+          </div>
 
           {selectedStore &&
             !dealsLoading &&
-            !dealsError && (
-              <Link to="/deals">
+            !dealsError &&
+            deals.length > 0 && (
+              <Link
+                className="section-link"
+                to="/deals"
+              >
                 View All Deals
               </Link>
             )}
         </div>
 
         {!selectedStore ? (
-          <p>
-            Select a store to see this week's deals.
-          </p>
-
+          <p>Select a store to see this week's deals.</p>
         ) : dealsLoading ? (
-          <p>
-            Loading this week's deals...
-          </p>
-
+          <p>Loading this week's deals...</p>
         ) : dealsError ? (
           <p className="error-message">
             {dealsError}
           </p>
-
         ) : deals.length === 0 ? (
           <p>
             No deals are currently available for this store.
           </p>
-
         ) : (
           <div className="deal-grid">
-            {deals.slice(0, 6).map((deal) => (
-              <div
+            {deals.slice(0, 6).map(deal => (
+              <article
                 className="deal-card"
                 key={deal.id}
               >
-                <h3>{deal.item}</h3>
-                <p>${deal.price}</p>
-              </div>
+                <h3 className="deal-name">
+                  {deal.item}
+                </h3>
+
+                {deal.price != null && (
+                  <p className="deal-price">
+                    ${Number(deal.price).toFixed(2)}
+                  </p>
+                )}
+
+                {deal.promotion && (
+                  <p className="deal-promotion">
+                    {deal.promotion}
+                  </p>
+                )}
+              </article>
             ))}
           </div>
         )}
-
       </section>
 
       <section className="planner">
-        <h2>Turn these deals into meals</h2>
+        <div className="planner-content">
+          <div>
+            <h2>Turn these deals into meals</h2>
 
-        <div className="planner-controls">
-          <label>
-            Number of meals:
+            <p className="section-description">
+              Build a meal plan around ingredients currently on sale.
+            </p>
+          </div>
 
-            <input
-              type="number"
-              min="1"
-              max="14"
-              value={meals}
-              onChange={(event) =>
-                setMeals(Number(event.target.value))
+          <div className="planner-actions">
+            <div className="planner-controls">
+              <label>
+                Number of meals
+
+                <input
+                  type="number"
+                  min="1"
+                  max="14"
+                  value={meals}
+                  onChange={(event) => {
+                    setMeals(Number(event.target.value))
+                  }}
+                />
+              </label>
+            </div>
+
+            <button
+              type="button"
+              className="generate-button"
+              onClick={generateMealPlan}
+              disabled={
+                mealPlanLoading ||
+                dealsLoading ||
+                !selectedStore ||
+                deals.length === 0 ||
+                meals < 1 ||
+                meals > 14
               }
-            />
-          </label>
+            >
+              {dealsLoading
+                ? 'Loading Deals...'
+                : mealPlanLoading
+                  ? 'Building Your Meal Plan...'
+                  : 'Build My Meal Plan'}
+            </button>
+          </div>
         </div>
-
-        <button
-          className="generate-button"
-          onClick={generateMealPlan}
-          disabled={
-            mealPlanLoading ||
-            dealsLoading ||
-            !selectedStore ||
-            deals.length === 0 ||
-            meals < 1 ||
-            meals > 14
-          }
-        >
-          {dealsLoading
-            ? "Loading Deals..."
-            : mealPlanLoading
-              ? "Building Your Meal Plan..."
-              : "Build My Meal Plan"}
-        </button>
 
         {mealPlanError && (
           <p className="error-message">
             {mealPlanError}
           </p>
         )}
-
       </section>
-
     </div>
   )
 }

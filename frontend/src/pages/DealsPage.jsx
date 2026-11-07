@@ -1,13 +1,15 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 
+const API_URL = 'http://127.0.0.1:8000'
+
 function DealsPage() {
   const [deals, setDeals] = useState([])
-  const [searchTerm, setSearchTerm] = useState("")
-  const [selectedCategory, setSelectedCategory] = useState("All")
+  const [searchTerm, setSearchTerm] = useState('')
+  const [selectedCategory, setSelectedCategory] = useState('All')
 
   const [selectedStore] = useState(() => {
-    const savedStore = localStorage.getItem("selectedStore")
+    const savedStore = localStorage.getItem('selectedStore')
 
     return savedStore
       ? JSON.parse(savedStore)
@@ -18,21 +20,28 @@ function DealsPage() {
     () => selectedStore !== null
   )
 
-  const [dealsError, setDealsError] = useState("")
+  const [dealsError, setDealsError] = useState('')
 
-  // Load deals for the selected store
   useEffect(() => {
     if (!selectedStore) {
       return
     }
 
     fetch(
-      `http://127.0.0.1:8000/stores/${selectedStore.store_id}/deals`
+      `${API_URL}/stores/${selectedStore.store_id}/deals`
     )
       .then(async response => {
         if (!response.ok) {
-          const errorData = await response.json()
-          throw new Error(errorData.detail)
+          let message = 'Unable to load deals.'
+
+          try {
+            const errorData = await response.json()
+            message = errorData.detail || message
+          } catch {
+            // Use the fallback message.
+          }
+
+          throw new Error(message)
         }
 
         return response.json()
@@ -41,8 +50,13 @@ function DealsPage() {
         setDeals(data)
       })
       .catch(error => {
-        console.error("Failed to load deals:", error)
-        setDealsError(error.message)
+        console.error('Failed to load deals:', error)
+
+        setDealsError(
+          error instanceof Error
+            ? error.message
+            : 'Unable to load deals.'
+        )
       })
       .finally(() => {
         setDealsLoading(false)
@@ -50,35 +64,47 @@ function DealsPage() {
 
   }, [selectedStore])
 
-  // Build a list of categories from the loaded deals
   const categories = [
-    "All",
+    'All',
     ...new Set(
       deals
-        .map(deal => deal.category_path?.[2])
+        .map(deal => deal.category)
         .filter(Boolean)
-    )
-  ]
+    ),
+  ].sort((a, b) => {
+    if (a === 'All') {
+      return -1
+    }
 
-  // Filter deals using the search term and selected category
+    if (b === 'All') {
+      return 1
+    }
+
+    return a.localeCompare(b)
+  })
+
+  const normalizedSearchTerm = searchTerm
+    .trim()
+    .toLowerCase()
+
   const filteredDeals = deals.filter(deal => {
     const matchesSearch = deal.item
       .toLowerCase()
-      .includes(searchTerm.toLowerCase())
-
-    const dealCategory = deal.category_path?.[2]
+      .includes(normalizedSearchTerm)
 
     const matchesCategory =
-      selectedCategory === "All" ||
-      dealCategory === selectedCategory
+      selectedCategory === 'All' ||
+      deal.category === selectedCategory
 
     return matchesSearch && matchesCategory
   })
 
   if (!selectedStore) {
     return (
-      <div className="app">
-        <Link to="/">← Back</Link>
+      <div className="app empty-page">
+        <Link className="back-link" to="/">
+          ← Back
+        </Link>
 
         <h1>Weekly Deals</h1>
 
@@ -86,40 +112,62 @@ function DealsPage() {
           Select a store from the home page to see this week's deals.
         </p>
 
-        <Link to="/">Choose a Store</Link>
+        <Link className="primary-link" to="/">
+          Choose a Store
+        </Link>
       </div>
     )
   }
 
   return (
     <div className="app">
-      <Link to="/">← Back</Link>
+      <Link className="back-link" to="/">
+        ← Back
+      </Link>
 
-      <div className="deals-page-header">
+      <header className="deals-page-header">
+        <p className="page-eyebrow">
+          {selectedStore.name}
+        </p>
+
         <h1>Weekly Deals</h1>
 
-        <p>
-          {selectedStore.name}
-          {selectedStore.city &&
-            ` · ${selectedStore.city}, ${selectedStore.state}`}
-        </p>
-      </div>
+        {selectedStore.city && (
+          <p className="page-description">
+            {selectedStore.city}
+            {selectedStore.state &&
+              `, ${selectedStore.state}`}
+          </p>
+        )}
+
+        {!dealsLoading && !dealsError && (
+          <p className="deal-count">
+            {deals.length === 1
+              ? '1 deal available'
+              : `${deals.length} deals available`}
+          </p>
+        )}
+      </header>
 
       <section className="deal-filters">
         <input
-          type="text"
+          className="deal-search"
+          type="search"
           placeholder="Search deals"
+          aria-label="Search deals"
           value={searchTerm}
-          onChange={(event) =>
+          onChange={(event) => {
             setSearchTerm(event.target.value)
-          }
+          }}
         />
 
         <select
+          className="category-filter"
+          aria-label="Filter deals by category"
           value={selectedCategory}
-          onChange={(event) =>
+          onChange={(event) => {
             setSelectedCategory(event.target.value)
-          }
+          }}
         >
           {categories.map(category => (
             <option
@@ -134,30 +182,47 @@ function DealsPage() {
 
       {dealsLoading ? (
         <p>Loading this week's deals...</p>
-
       ) : dealsError ? (
         <p className="error-message">
           {dealsError}
         </p>
-
+      ) : deals.length === 0 ? (
+        <p>
+          No deals are currently available for this store.
+        </p>
       ) : filteredDeals.length === 0 ? (
-        <p>No deals found.</p>
-
+        <p>
+          No deals match your current search or category.
+        </p>
       ) : (
         <div className="deal-grid">
           {filteredDeals.map(deal => (
-            <div
+            <article
               className="deal-card"
               key={deal.id}
             >
-              <h3>{deal.item}</h3>
+              {deal.category && (
+                <p className="deal-category">
+                  {deal.category}
+                </p>
+              )}
 
-              <p>${deal.price}</p>
+              <h3 className="deal-name">
+                {deal.item}
+              </h3>
+
+              {deal.price != null && (
+                <p className="deal-price">
+                  ${Number(deal.price).toFixed(2)}
+                </p>
+              )}
 
               {deal.promotion && (
-                <p>{deal.promotion}</p>
+                <p className="deal-promotion">
+                  {deal.promotion}
+                </p>
               )}
-            </div>
+            </article>
           ))}
         </div>
       )}
