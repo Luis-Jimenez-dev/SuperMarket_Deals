@@ -86,11 +86,4 @@ def sync_current_deals(store_id):
     results = deal_normalizer.normalize_many_deals(products)
     food_deals = results['Food Deals']
 
-    for deal in food_deals[:10]:
-        print(
-            deal["item"],
-            "->",
-            deal["canonical_ingredient"]
-        )
-
     database.save_weekly_ad_with_deals(store_id, current_publication, food_deals)

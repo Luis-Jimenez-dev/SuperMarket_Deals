@@ -62,7 +62,7 @@ def generate_meal_plan(store_id: int, meals: int = Query(ge=1, le=14)):
     try:
         safeway_deals.ensure_current_deals(store_id)
         weekly_deals = database.get_deals(store_id)
-        recipes = meal_plan.load_recipes()
+        recipes = database.get_recipes()
         return meal_plan.generate(weekly_deals, recipes, meals)
     except requests.exceptions.RequestException:
         raise HTTPException(

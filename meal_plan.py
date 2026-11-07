@@ -1,192 +1,162 @@
-# Handles recipe matching, meal plan generation, and recipe loading
-import json
-import spacy
 import time
-from functools import lru_cache
 
-nlp = spacy.load('en_core_web_sm')
+from normalization.text_normalizer import (
+    find_best_known_term,
+    get_canonical_term,
+)
 
-def load_category_map():
-    with open("category_map.json", "r", encoding="utf-8") as file:
-        category_map = json.load(file)
-    return category_map
+IGNORED_RECIPE_INGREDIENTS = {
+    "water",
+}
 
-category_map = load_category_map()
+def get_recipe_canonical_ingredient(ingredient_name):
+    if not isinstance(ingredient_name, str) or not ingredient_name.strip():
+        return None
 
-# Load recipe data from the local JSON file
-def load_recipes():
-    with open("recipes.json", "r", encoding="utf-8") as file:
-        recipes = json.load(file)
+    matched_term = find_best_known_term(ingredient_name)
 
-    return recipes
+    if matched_term is None:
+        return None
 
-@lru_cache
-def get_lemmas(text):
-    doc = nlp(text.lower())
-    lemma = {token.lemma_ for token in doc}
-    return lemma
+    return get_canonical_term(matched_term)
 
-def match_ingredient(ingredient_name, deal_name):
-    ingredient_words = get_lemmas(ingredient_name)
-    deal_words = get_lemmas(deal_name)
 
-    matching_words = ingredient_words & deal_words
-    matching_percentage = len(matching_words) / len(ingredient_words)
+def match_canonical_ingredient(ingredient_name, deal):
+    recipe_ingredient = get_recipe_canonical_ingredient(
+        ingredient_name
+    )
 
-    return matching_percentage >= .51
+    deal_ingredient = deal.get("canonical_ingredient")
 
-def match_category(ingredient_category, deal_category_path):
-    category_rules = category_map.get(ingredient_category, set())
-    allowed_categories = category_rules.get("allowed", [])
-    excluded_categories = category_rules.get("excluded", [])
+    if recipe_ingredient is None or deal_ingredient is None:
+        return False
 
-    for category in deal_category_path:
-        if category in excluded_categories:
-            return False
+    return recipe_ingredient == deal_ingredient
 
-    for category in deal_category_path:
-        if category in allowed_categories:
-            return True
-        
-    return False
 
-# Generate structured meal recommendations from weekly grocery deals
+def find_best_deal(ingredient_name, weekly_deals):
+    """
+    Find the cheapest weekly deal with the same canonical ingredient.
+    """
+    best_deal = None
+
+    for deal in weekly_deals:
+        if not match_canonical_ingredient(ingredient_name, deal):
+            continue
+
+        if deal.get("price") is None:
+            continue
+
+        if (
+            best_deal is None
+            or deal["price"] < best_deal["price"]
+        ):
+            best_deal = deal
+
+    return best_deal
+
+
 def generate(weekly_deals, recipes, meal_count):
     start_time = time.time()
-    match_calls = 0
+
     recommended_recipes = []
     best_deal_cache = {}
 
-    # Compare each recipe against the available weekly deals
     for recipe in recipes:
-        ingredients = set()
-        matches = set()
+        ingredients = recipe.get("ingredients", [])
+
         matched_deals = []
-        total_cost = 0
+        missing_ingredients = []
+        matchable_ingredients = []
 
-        # Keep track of every ingredient needed for the recipe
-        for ingredient in recipe['ingredients']:
-            ingredients.add(ingredient['name'].title())
+        for ingredient in ingredients:
+            ingredient_name = ingredient.get("name")
 
-        # Find the best available deal for each recipe ingredient
-        for ingredient in recipe['ingredients']:
-            cache_key = (
-                ingredient['name'],
-                ingredient['category'],
-                ingredient['unit']
+            canonical_ingredient = get_recipe_canonical_ingredient(
+                ingredient_name
             )
 
-            # Reuse the result if this ingredient was already searched
-            if cache_key in best_deal_cache:
-                best_deal = best_deal_cache[cache_key]
+            # Unknown ingredients should not hurt the recipe's score.
+            if canonical_ingredient is None:
+                continue
 
+            if canonical_ingredient in IGNORED_RECIPE_INGREDIENTS:
+                continue
+
+            matchable_ingredients.append(ingredient)
+
+            if canonical_ingredient in best_deal_cache:
+                best_deal = best_deal_cache[canonical_ingredient]
             else:
-                best_deal = None
-
-                # Compare the current ingredient against every weekly deal
-                for deal in weekly_deals:
-                    match_calls += 1
-
-                    if (
-                        match_ingredient(ingredient['name'], deal['item'])
-                        and match_category(
-                            ingredient['category'],
-                            deal['category_path']
-                        )
-                    ):
-                        # Only use deals with a compatible unit
-                        if (
-                            deal['unit'] is not None
-                            and ingredient['unit'] in deal['unit']
-                        ):
-                            if (
-                                best_deal is None
-                                or best_deal['price'] > deal['price']
-                            ):
-                                best_deal = deal
-
-                        elif (
-                            deal['promotion'] is not None
-                            and ingredient['unit'] in deal['promotion']
-                        ):
-                            if (
-                                best_deal is None
-                                or best_deal['price'] > deal['price']
-                            ):
-                                best_deal = deal
-
-                # Remember both successful and unsuccessful searches
-                best_deal_cache[cache_key] = best_deal
-
-            # Save the ingredient and deal when a valid match was found
-            if best_deal is not None:
-                matches.add(ingredient['name'].title())
-                total_cost += (
-                    best_deal['price'] * ingredient['quantity']
+                best_deal = find_best_deal(
+                    ingredient_name,
+                    weekly_deals,
                 )
+                best_deal_cache[canonical_ingredient] = best_deal
 
+            if best_deal is not None:
                 matched_deals.append({
-                    'ingredient': ingredient,
-                    'item': best_deal['item'],
-                    'price': best_deal['price'],
-                    'unit': best_deal['unit'],
+                    "ingredient": ingredient,
+                    "canonical_ingredient": canonical_ingredient,
+                    "item": best_deal["item"],
+                    "price": best_deal["price"],
+                    "unit": best_deal.get("unit"),
                 })
-
-        # Calculate how many recipe ingredients matched available deals
-        matches_length = len(matches)
-
-        # Find the ingredients that did not have matching deals
-        missing = ingredients - matches
-        missing_ingredients = []
-
-        # Calculate the percentage of ingredients with matching deals
-        match_percentage = (
-            matches_length / len(ingredients)
-        ) * 100
-
-        # Keep the full ingredient data for the missing ingredients
-        for ingredient in recipe['ingredients']:
-            if ingredient['name'].title() in missing:
+            else:
                 missing_ingredients.append(ingredient)
 
-        # Only recommend recipes that matched at least one deal
+        matches_length = len(matched_deals)
+        matchable_count = len(matchable_ingredients)
+
+        if matchable_count == 0:
+            continue
+
+        match_percentage = (
+            matches_length / matchable_count
+        ) * 100
+
+        # A recipe needs at least one discounted ingredient
+        # to be useful as a deal-based recommendation.
         if matches_length > 0:
             recommended_recipes.append({
-                'recipe': recipe['name'],
-                'matches': matches_length,
-                'missing': list(missing),
-                'missing_length': len(missing),
-                'match_percentage': match_percentage,
-                'matched_deals': matched_deals,
-                'missing_ingredients': missing_ingredients,
-                'total_cost': total_cost
+                "recipe": recipe["name"],
+                "recipe_id": recipe.get("id"),
+                "image_url": recipe.get("image_url"),
+                "category": recipe.get("category"),
+                "cuisine": recipe.get("cuisine"),
+                "instructions": recipe.get("instructions"),
+                "matches": matches_length,
+                "missing": [
+                    ingredient["name"]
+                    for ingredient in missing_ingredients
+                ],
+                "missing_length": len(missing_ingredients),
+                "match_percentage": match_percentage,
+                "matched_deals": matched_deals,
+                "missing_ingredients": missing_ingredients,
             })
 
-    # Rank recipes by most matches and then fewest missing ingredients
     recommended_recipes.sort(
         key=lambda item: (
-            item['matches'],
-            -item['missing_length']
+            item["matches"],
+            item["match_percentage"],
+            -item["missing_length"],
         ),
-        reverse=True
+        reverse=True,
     )
 
-    # Only return the number of recipes requested by the user
-    selected_recipes = recommended_recipes[0:meal_count]
+    selected_recipes = recommended_recipes[:meal_count]
 
     shopping_list = {}
 
     for recipe in selected_recipes:
-        for ingredient in recipe['missing_ingredients']:
-            if ingredient['name'] not in shopping_list:
-                shopping_list[ingredient['name']] = {
-                    'quantity': ingredient['quantity'],
-                    'unit': ingredient['unit']
+        for ingredient in recipe["missing_ingredients"]:
+            ingredient_name = ingredient["name"]
+
+            if ingredient_name not in shopping_list:
+                shopping_list[ingredient_name] = {
+                    "measurement": ingredient.get("measurement")
                 }
-            else:
-                shopping_list[ingredient['name']]['quantity'] += (
-                    ingredient['quantity']
-                )
 
     end_time = time.time()
 
@@ -194,34 +164,38 @@ def generate(weekly_deals, recipes, meal_count):
         f"Meal plan generation took: "
         f"{end_time - start_time:.2f} seconds"
     )
-    print(f"Ingredient comparisons: {match_calls}")
 
     return {
-        'recipes': selected_recipes,
-        'shopping_list': shopping_list
+        "recipes": selected_recipes,
+        "shopping_list": shopping_list,
     }
 
-# Format generated meal plan data for the command-line interface
+
 def format_meal_plan(meal_data):
     output = ""
 
-    # Format each selected recipe
-    for index, recipe in enumerate(meal_data['recipes'], start=1):
+    for index, recipe in enumerate(
+        meal_data["recipes"],
+        start=1,
+    ):
         output += (
-            f"{index}. {recipe['recipe']} - Matches: {recipe['matches']} "
-            f"| Deal Match: {recipe['match_percentage']:.0f}% "
-            f"| Matched Deal Cost: ${recipe['total_cost']:.2f}\n"
-            f"Need to buy: " + ", ".join(recipe['missing']) + "\n"
+            f"{index}. {recipe['recipe']} - "
+            f"Matches: {recipe['matches']} "
+            f"| Deal Match: "
+            f"{recipe['match_percentage']:.0f}%\n"
+            f"Need to buy: "
+            + ", ".join(recipe["missing"])
+            + "\n"
         )
 
-    # Format the combined shopping list
     output += "\nShopping List:\n"
 
-    for name in meal_data['shopping_list']:
-        output += (
-            f"{name} - "
-            f"{meal_data['shopping_list'][name]['quantity']} "
-            f"{meal_data['shopping_list'][name]['unit']}\n"
-        )
+    for name, ingredient in meal_data["shopping_list"].items():
+        measurement = ingredient.get("measurement")
+
+        if measurement:
+            output += f"{name} - {measurement}\n"
+        else:
+            output += f"{name}\n"
 
     return output

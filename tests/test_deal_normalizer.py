@@ -1,6 +1,5 @@
 from normalization.deal_normalizer import (
     get_price,
-    get_package_info,
     normalize_deal,
     get_ingredient_info,
     is_usable_deal,
@@ -188,3 +187,22 @@ def test_chicken_tenderloins_can_still_match_chicken():
     result = get_ingredient_info("Fresh Boneless Chicken Tenderloins")
 
     assert result["canonical_ingredient"] is not None
+
+def test_prepared_chicken_tenders_do_not_match_chicken():
+    result = get_ingredient_info(
+        "Chicken Tenders Original or Nashville Hot., "
+        "BBQ Rib Tips Available in the Deli., "
+        "Tater Kegs Original."
+    )
+
+    assert result["canonical_ingredient"] is None
+    assert result["ingredient_category"] is None
+
+
+def test_low_carb_prepared_chicken_does_not_match_chicken():
+    result = get_ingredient_info(
+        "Real Good Foods Low Carb Chicken"
+    )
+
+    assert result["canonical_ingredient"] is None
+    assert result["ingredient_category"] is None
