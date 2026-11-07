@@ -1,6 +1,6 @@
 import requests
 import database
-import normalization.deal_normalizer
+from normalization import deal_normalizer
 import os
 from dotenv import load_dotenv
 from datetime import datetime

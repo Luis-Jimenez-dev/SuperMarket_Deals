@@ -1,51 +1,83 @@
 import re
 
-# Used for a single deal
-def normalize_deal(raw_deal):
-    price = get_price(raw_deal)
-    category_path = get_category(raw_deal)
-    if category_path:
-        category = category_path[-1]
-    else:
-        category = None
+from normalization.text_normalizer import (
+    find_best_known_term,
+    get_canonical_term,
+)
+from normalization.ingredient_normalizer import classify_canonical_ingredient
 
-    package_info = get_package_info(raw_deal.get('description')) or {}
 
-    amount = package_info.get('amount')
-    min_amount = package_info.get('min_amount')
-    max_amount = package_info.get('max_amount')
-    package_count = package_info.get('package_count')
-    unit = package_info.get('unit')
+def get_ingredient_info(item_name):
+    """
+    Identify the canonical ingredient and internal ingredient category
+    for a retailer product name.
+    """
+    matched_term = find_best_known_term(item_name)
 
-    deal = {
-        "source_product_id": raw_deal['id'],
-        'item': raw_deal['name'],
-        'price': price,
-        'promotion': raw_deal['post_price_text'],
-        'category': category,
-        'category_path': category_path,
-        'description': raw_deal['description'],
-        'amount': amount,
-        'min_amount': min_amount,
-        'max_amount': max_amount,
-        'package_count': package_count,
-        'unit': unit
+    if matched_term is None:
+        return {
+            "canonical_ingredient": None,
+            "ingredient_category": None,
+        }
+
+    canonical_ingredient = get_canonical_term(matched_term)
+
+    if canonical_ingredient is None:
+        return {
+            "canonical_ingredient": None,
+            "ingredient_category": None,
+        }
+
+    ingredient_category = classify_canonical_ingredient(
+        canonical_ingredient
+    )
+
+    return {
+        "canonical_ingredient": canonical_ingredient,
+        "ingredient_category": ingredient_category,
     }
 
 
+def normalize_deal(raw_deal):
+    price = get_price(raw_deal)
+
+    category_path = get_category(raw_deal)
+    category = category_path[-1] if category_path else None
+
+    package_info = get_package_info(raw_deal.get("description")) or {}
+
+    ingredient_info = get_ingredient_info(
+        raw_deal.get("name", "")
+    )
+
+    deal = {
+        "source_product_id": raw_deal["id"],
+
+        # Original retailer name is preserved for display.
+        "item": raw_deal["name"],
+
+        # Internal values used for recipe/deal matching.
+        "canonical_ingredient": ingredient_info["canonical_ingredient"],
+        "ingredient_category": ingredient_info["ingredient_category"],
+
+        "price": price,
+        "promotion": raw_deal.get("post_price_text"),
+
+        # Retailer-provided category information.
+        "category": category,
+        "category_path": category_path,
+
+        "description": raw_deal.get("description"),
+
+        "amount": package_info.get("amount"),
+        "min_amount": package_info.get("min_amount"),
+        "max_amount": package_info.get("max_amount"),
+        "package_count": package_info.get("package_count"),
+        "unit": package_info.get("unit"),
+    }
 
     return deal
 
-def get_category(raw_deal):
-    categories = raw_deal.get('item_categories', {})
-
-    category_path = []
-
-    for level in categories.values():
-        if level is not None and level.get('category_name') is not None:
-            category_path.append(level['category_name'])
-
-    return category_path
 
 def get_price(raw_deal):
     try:
@@ -53,55 +85,133 @@ def get_price(raw_deal):
     except (KeyError, ValueError, TypeError):
         return None
 
-    pre_price_text = raw_deal.get("pre_price_text", "")
+    pre_price_text = raw_deal.get("pre_price_text")
 
-    if "for" in pre_price_text:
-        parts = pre_price_text.split()
-        quantity = int(parts[0])
-        price = price / quantity
+    if pre_price_text and "for" in pre_price_text.lower():
+        try:
+            parts = pre_price_text.lower().split("for")
+            quantity = int(parts[0].strip())
+
+            if quantity > 0:
+                price = price / quantity
+
+        except (ValueError, TypeError, ZeroDivisionError):
+            pass
 
     return price
 
+
+def get_category(raw_deal):
+    categories = raw_deal.get("categories")
+
+    if not categories:
+        return []
+
+    category_path = []
+
+    for category in categories:
+        if isinstance(category, dict):
+            name = category.get("name")
+
+            if name:
+                category_path.append(name)
+
+        elif isinstance(category, str):
+            category_path.append(category)
+
+    return category_path
+
+
 def is_valid_unit(unit):
-    valid_units = {'oz', 'lbs', 'lb', 'ml', 'qt', 'ct' }
-    if unit in valid_units:
-        return True
-    else:
+    if unit is None:
         return False
 
-def get_package_info(description):
+    valid_units = {
+        "oz",
+        "lbs",
+        "lb",
+        "ml",
+        "qt",
+        "ct",
+    }
 
-    if description is None:
+    return unit.lower() in valid_units
+
+
+def get_package_info(description):
+    if not description:
         return None
 
-    match = re.search(r"(\d+(?:\.\d+)?)\s*\-\s*([a-zA-Z]+)", description)
-    range_match = re.search(r"(\d+(?:\.\d+)?)\s*to\s*(\d+(?:\.\d+)?)\s*\-\s*([a-zA-Z]+)", description)
-    pack_match = re.search(r"(\d+(?:\.\d+)?)\s*-\s*pack,\s*(\d+(?:\.\d+)?)\s*-\s*([a-zA-Z]+)", description)
-    if pack_match and is_valid_unit(pack_match.group(3)):
-        return {
-                'package_count': int(pack_match.group(1)), 
-                'amount': float(pack_match.group(2)), 
-                'unit': pack_match.group(3)
-                }
-    elif range_match and is_valid_unit(range_match.group(3)):
-        return {'min_amount': float(range_match.group(1)), 'max_amount': float(range_match.group(2)), 'unit': range_match.group(3)}
-    elif match and is_valid_unit(match.group(2)):
-        return {'amount': float(match.group(1)), 'unit': match.group(2)}
+    description = description.lower()
+
+    package_match = re.search(
+        r"(\d+)\s*(?:pack|pk)\s*[-x]?\s*(\d+(?:\.\d+)?)\s*(oz|lbs|lb|ml|qt|ct)",
+        description,
+    )
+
+    if package_match:
+        package_count = int(package_match.group(1))
+        amount = float(package_match.group(2))
+        unit = package_match.group(3)
+
+        if is_valid_unit(unit):
+            return {
+                "amount": amount,
+                "min_amount": None,
+                "max_amount": None,
+                "package_count": package_count,
+                "unit": unit,
+            }
+
+    range_match = re.search(
+        r"(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)\s*(oz|lbs|lb|ml|qt|ct)",
+        description,
+    )
+
+    if range_match:
+        min_amount = float(range_match.group(1))
+        max_amount = float(range_match.group(2))
+        unit = range_match.group(3)
+
+        if is_valid_unit(unit):
+            return {
+                "amount": None,
+                "min_amount": min_amount,
+                "max_amount": max_amount,
+                "package_count": None,
+                "unit": unit,
+            }
+
+    single_match = re.search(
+        r"(\d+(?:\.\d+)?)\s*(oz|lbs|lb|ml|qt|ct)",
+        description,
+    )
+
+    if single_match:
+        amount = float(single_match.group(1))
+        unit = single_match.group(2)
+
+        if is_valid_unit(unit):
+            return {
+                "amount": amount,
+                "min_amount": None,
+                "max_amount": None,
+                "package_count": None,
+                "unit": unit,
+            }
+
+    return None
 
 
 def is_usable_deal(deal):
-    if deal.get('price') is None:
-        return False
-    else:
-        return True
+    return deal.get("price") is not None
+
 
 def is_food_deal(deal):
-    category_path = deal.get('category_path', [])
+    category_path = deal.get("category_path") or []
 
-    if 'Food Items' in category_path:
-        return True
+    return "Food Items" in category_path
 
-    return False
 
 def normalize_many_deals(raw_deals):
     usable_deals = []
@@ -109,16 +219,20 @@ def normalize_many_deals(raw_deals):
     other_deals = []
 
     for raw_deal in raw_deals:
-        normalized_deal = normalize_deal(raw_deal)
-        if is_usable_deal(normalized_deal):
-            usable_deals.append(normalized_deal)
-            if is_food_deal(normalized_deal):
-                food_deals.append(normalized_deal)
-            else:
-                other_deals.append(normalized_deal)
+        deal = normalize_deal(raw_deal)
 
-    return ({
-        'Usable Deals': usable_deals,
-        'Food Deals': food_deals,
-        'Other Deals': other_deals
-    })
+        if not is_usable_deal(deal):
+            continue
+
+        usable_deals.append(deal)
+
+        if is_food_deal(deal):
+            food_deals.append(deal)
+        else:
+            other_deals.append(deal)
+
+    return {
+        "Usable Deals": usable_deals,
+        "Food Deals": food_deals,
+        "Other Deals": other_deals,
+    }

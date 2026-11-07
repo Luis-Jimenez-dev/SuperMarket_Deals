@@ -60,7 +60,7 @@ normalization_cache = load_json(CACHE_FILE, {})
 normalization_review = load_json(REVIEW_FILE, {})
 grocery_vocabulary = load_json(
     VOCABULARY_FILE,
-    {"ingredients": []}
+    {"ingredients": {}}
 )
 
 

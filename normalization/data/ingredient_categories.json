@@ -2,34 +2,66 @@
     "poultry": [
         "chicken",
         "chicken breast",
-        "chicken breasts",
         "chicken thigh",
-        "chicken thighs"
+        "chicken leg"
     ],
     "vegetable": [
         "broccoli",
+        "cabbage",
         "carrot",
-        "carrots",
-        "stir-fry vegetables",
+        "celery",
+        "garlic",
+        "ginger",
+        "leek",
+        "lettuce",
         "onion",
-        "onions"
+        "potato",
+        "red pepper",
+        "shallot",
+        "stir-fry vegetable"
     ],
     "grains": [
-        "rice",
         "brown rice"
     ],
     "dairy": [
-        "milk",
         "butter",
         "cheese",
+        "cream",
         "halloumi",
-        "halloumi cheese"
+        "milk",
+        "sour cream"
     ],
     "sauces": [
+        "hot sauce",
         "soy sauce"
     ],
     "oils": [
+        "oil",
         "olive oil",
         "vegetable oil"
+    ],
+    "spices_seasonings": [
+        "bay leaf",
+        "cayenne pepper",
+        "coriander",
+        "cumin",
+        "pepper",
+        "rosemary",
+        "salt",
+        "turmeric"
+    ],
+    "baking": [
+        "brown sugar",
+        "cornstarch",
+        "sugar"
+    ],
+    "eggs": [
+        "egg yolk"
+    ],
+    "meat": [
+        "ham"
+    ],
+    "bakery": [
+        "bun"
     ]
 }
