@@ -139,6 +139,8 @@ def get_current_weekly_ad(store_id):
                 WHERE store_id = %s
                 AND start_date <= CURRENT_DATE
                 AND end_date >= CURRENT_DATE
+                ORDER BY start_date DESC
+                LIMIT 1
                 """,
                 (store_id,)
             )
