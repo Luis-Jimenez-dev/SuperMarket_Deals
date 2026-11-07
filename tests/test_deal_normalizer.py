@@ -6,6 +6,20 @@ from normalization.deal_normalizer import (
     is_usable_deal,
     is_food_deal
 )
+import pytest
+
+
+@pytest.mark.parametrize("item_name", [
+    None,
+    "",
+    "   ",
+    123,
+])
+def test_invalid_item_name_does_not_match_ingredient(item_name):
+    result = get_ingredient_info(item_name)
+
+    assert result["canonical_ingredient"] is None
+    assert result["ingredient_category"] is None
 
 
 def test_get_regular_price():
@@ -55,7 +69,7 @@ def test_food_deal():
 
     assert is_food_deal(deal) is True
 
-def test_non_food_deal():
+def test_food_service_category_is_not_food_deal():
     deal = {
         "food_category_path": [
             "Business & Industrial",
@@ -67,7 +81,7 @@ def test_non_food_deal():
     assert is_food_deal(deal) is False
 
 
-def test_non_food_deal():
+def test_missing_food_category_path_is_not_food_deal():
     deal = {
         "category_path": [
             "Household",
@@ -163,3 +177,14 @@ def test_bell_pepper_does_not_match_seasoning_pepper():
 
     assert result["canonical_ingredient"] == "bell pepper"
     assert result["ingredient_category"] == "vegetable"
+
+def test_pot_pie_does_not_match_chicken():
+    result = get_ingredient_info("Chicken or Turkey Pot Pie")
+
+    assert result["canonical_ingredient"] is None
+    assert result["ingredient_category"] is None
+
+def test_chicken_tenderloins_can_still_match_chicken():
+    result = get_ingredient_info("Fresh Boneless Chicken Tenderloins")
+
+    assert result["canonical_ingredient"] is not None

@@ -5,13 +5,26 @@ function HomePage() {
   const [deals, setDeals] = useState([])
   const [meals, setMeals] = useState(1)
 
-  // Separate loading states for deals and meal plans
-  const [dealsLoading, setDealsLoading] = useState(false)
-  const [mealPlanLoading, setMealPlanLoading] = useState(false)
+  const [postalCode, setPostalCode] = useState(() => {
+    return localStorage.getItem("postalCode") ?? ""
+  })
 
-  const [postalCode, setPostalCode] = useState("")
   const [nearbyStores, setNearbyStores] = useState([])
-  const [selectedStore, setSelectedStore] = useState(null)
+
+  const [selectedStore, setSelectedStore] = useState(() => {
+    const savedStore = localStorage.getItem("selectedStore")
+
+    return savedStore
+      ? JSON.parse(savedStore)
+      : null
+  })
+
+  // If a saved store exists, deals will load when the page first opens
+  const [dealsLoading, setDealsLoading] = useState(
+    () => selectedStore !== null
+  )
+
+  const [mealPlanLoading, setMealPlanLoading] = useState(false)
 
   // Error states
   const [storeSearchError, setStoreSearchError] = useState("")
@@ -46,12 +59,13 @@ function HomePage() {
     }
   }
 
-  // Save the selected store so it persists after refreshing
+  // Save the selected store and prepare to load its deals
   const selectStore = (store) => {
-    setSelectedStore(store)
+    setDealsLoading(true)
     setDeals([])
     setDealsError("")
     setMealPlanError("")
+    setSelectedStore(store)
 
     localStorage.setItem(
       "selectedStore",
@@ -63,6 +77,7 @@ function HomePage() {
   const changeStore = () => {
     setSelectedStore(null)
     setDeals([])
+    setDealsLoading(false)
     setDealsError("")
     setMealPlanError("")
 
@@ -73,29 +88,11 @@ function HomePage() {
     }
   }
 
-  // Restore the selected store and ZIP code when the page loads
-  useEffect(() => {
-    const savedStore = localStorage.getItem("selectedStore")
-    const savedPostalCode = localStorage.getItem("postalCode")
-
-    if (savedStore) {
-      setSelectedStore(JSON.parse(savedStore))
-    }
-
-    if (savedPostalCode) {
-      setPostalCode(savedPostalCode)
-    }
-  }, [])
-
   // Load deals whenever the selected store changes
   useEffect(() => {
     if (!selectedStore) {
       return
     }
-
-    setDealsLoading(true)
-    setDealsError("")
-    setDeals([])
 
     fetch(
       `http://127.0.0.1:8000/stores/${selectedStore.store_id}/deals`
@@ -291,11 +288,7 @@ function HomePage() {
             {deals.slice(0, 6).map((deal) => (
               <div
                 className="deal-card"
-                key={
-                  deal.source_product_id ??
-                  deal.id ??
-                  deal.item
-                }
+                key={deal.id}
               >
                 <h3>{deal.item}</h3>
                 <p>${deal.price}</p>

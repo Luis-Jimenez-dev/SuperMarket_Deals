@@ -1,4 +1,6 @@
+import json
 import re
+from pathlib import Path
 
 from normalization.text_normalizer import (
     find_best_known_term,
@@ -6,12 +8,13 @@ from normalization.text_normalizer import (
 )
 from normalization.ingredient_normalizer import classify_canonical_ingredient
 
-NON_INGREDIENT_PRODUCT_PHRASES = {
-    "potato chips",
-    "ice cream",
-    "pizza",
-    "yogurt",
-}
+
+DATA_DIR = Path(__file__).parent / "data"
+NON_INGREDIENT_PRODUCTS_PATH = DATA_DIR / "non_ingredient_products.json"
+
+
+with open(NON_INGREDIENT_PRODUCTS_PATH, "r", encoding="utf-8") as file:
+    NON_INGREDIENT_PRODUCT_PHRASES = set(json.load(file))
 
 
 def get_ingredient_info(item_name):
@@ -21,6 +24,12 @@ def get_ingredient_info(item_name):
     Deal names are treated conservatively because a known ingredient word
     can appear inside a different prepared or packaged product.
     """
+    if not isinstance(item_name, str) or not item_name.strip():
+        return {
+            "canonical_ingredient": None,
+            "ingredient_category": None,
+        }
+
     if contains_non_ingredient_product_phrase(item_name):
         return {
             "canonical_ingredient": None,
@@ -52,6 +61,7 @@ def get_ingredient_info(item_name):
         "ingredient_category": ingredient_category,
     }
 
+
 def normalize_deal(raw_deal):
     price = get_price(raw_deal)
 
@@ -60,7 +70,9 @@ def normalize_deal(raw_deal):
 
     food_category_path = get_food_category_path(raw_deal)
 
-    package_info = get_package_info(raw_deal.get("description")) or {}
+    package_info = get_package_info(
+        raw_deal.get("description")
+    ) or {}
 
     ingredient_info = get_ingredient_info(
         raw_deal.get("name", "")
@@ -160,7 +172,6 @@ def get_food_category_path(raw_deal):
 
     category_path = []
 
-    # Flipp currently provides levels such as l1, l2, l3, etc.
     for level_number in range(1, 8):
         level = item_categories.get(f"l{level_number}")
 
@@ -198,7 +209,7 @@ def get_package_info(description):
     description = description.lower()
 
     package_match = re.search(
-        r"(\d+)\s*(?:pack|pk)\s*[-x]?\s*(\d+(?:\.\d+)?)\s*(oz|lbs|lb|ml|qt|ct)",
+        r"(\d+)\s(?:pack|pk)\s[-x]?\s(\d+(?:\.\d+)?)\s(oz|lbs|lb|ml|qt|ct)",
         description,
     )
 
@@ -217,7 +228,7 @@ def get_package_info(description):
             }
 
     range_match = re.search(
-        r"(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)\s*(oz|lbs|lb|ml|qt|ct)",
+        r"(\d+(?:\.\d+)?)\s[-–]\s(\d+(?:\.\d+)?)\s(oz|lbs|lb|ml|qt|ct)",
         description,
     )
 
@@ -236,7 +247,7 @@ def get_package_info(description):
             }
 
     single_match = re.search(
-        r"(\d+(?:\.\d+)?)\s*(oz|lbs|lb|ml|qt|ct)",
+        r"(\d+(?:\.\d+)?)\s(oz|lbs|lb|ml|qt|ct)",
         description,
     )
 
@@ -293,6 +304,7 @@ def normalize_many_deals(raw_deals):
         "Food Deals": food_deals,
         "Other Deals": other_deals,
     }
+
 
 def contains_non_ingredient_product_phrase(item_name):
     normalized_name = item_name.lower()

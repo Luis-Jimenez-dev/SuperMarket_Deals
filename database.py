@@ -53,7 +53,7 @@ def get_deals(store_id):
 
             cur.execute(
                 """
-                SELECT item, price, unit, category, category_path, promotion, description, 
+                SELECT id, source_product_id, item, price, unit, category, category_path, promotion, description, 
                 amount, min_amount, max_amount, package_count, canonical_ingredient
                 FROM deal_items
                 WHERE deal_items.weekly_ad_id = %s

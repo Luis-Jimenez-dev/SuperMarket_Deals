@@ -83,15 +83,7 @@ def sync_current_deals(store_id):
     publication_id = current_publication['id']
 
     products = get_publication_products(publication_id)
-    
-    print("Raw products:", len(products))
-
     results = deal_normalizer.normalize_many_deals(products)
-    
-    print("Usable deals:", len(results["Usable Deals"]))
-    print("Food deals:", len(results["Food Deals"]))
-    print("Other deals:", len(results["Other Deals"]))
-
     food_deals = results['Food Deals']
 
     for deal in food_deals[:10]:
@@ -102,6 +94,3 @@ def sync_current_deals(store_id):
         )
 
     database.save_weekly_ad_with_deals(store_id, current_publication, food_deals)
-
-sync_current_deals(5)
-database.pool.close()
