@@ -1,5 +1,6 @@
 import json
 import re
+from functools import lru_cache
 from pathlib import Path
 
 
@@ -52,7 +53,7 @@ def save_json(file_path, data):
             file,
             indent=4,
             ensure_ascii=False,
-            sort_keys=True
+            sort_keys=True,
         )
 
 
@@ -60,7 +61,7 @@ normalization_cache = load_json(CACHE_FILE, {})
 normalization_review = load_json(REVIEW_FILE, {})
 grocery_vocabulary = load_json(
     VOCABULARY_FILE,
-    {"ingredients": {}}
+    {"ingredients": {}},
 )
 
 
@@ -109,7 +110,11 @@ def singularize_word(word):
     return word
 
 
+@lru_cache(maxsize=4096)
 def normalize_text(text):
+    if not isinstance(text, str):
+        return ""
+
     cleaned_text = clean_text(text)
 
     if not cleaned_text:
@@ -119,7 +124,9 @@ def normalize_text(text):
     normalized_words = []
 
     for word in words:
-        normalized_words.append(singularize_word(word))
+        normalized_words.append(
+            singularize_word(word)
+        )
 
     return " ".join(normalized_words)
 
@@ -131,40 +138,90 @@ def normalize_list(values):
         normalized = normalize_text(value)
 
         if normalized:
-            normalized_values.append(normalized)
+            normalized_values.append(
+                normalized
+            )
 
     return normalized_values
 
 
-def get_known_terms():
-    known_terms = set()
+def build_vocabulary_indexes():
+    """
+    Build lookup structures once when the backend starts.
 
-    for aliases in grocery_vocabulary["ingredients"].values():
+    alias_to_canonical:
+        normalized alias -> normalized canonical ingredient
+
+    known_terms:
+        all normalized aliases sorted from most specific
+        to least specific
+    """
+    alias_to_canonical = {}
+
+    for (
+        canonical,
+        aliases,
+    ) in grocery_vocabulary["ingredients"].items():
+        normalized_canonical = normalize_text(
+            canonical
+        )
+
+        if not normalized_canonical:
+            continue
+
+        # Make sure the canonical name itself can
+        # always be used as a known term.
+        alias_to_canonical[
+            normalized_canonical
+        ] = normalized_canonical
+
         for alias in aliases:
-            normalized_term = normalize_text(alias)
+            normalized_alias = normalize_text(
+                alias
+            )
 
-            if normalized_term:
-                known_terms.add(normalized_term)
+            if not normalized_alias:
+                continue
 
-    return known_terms
+            alias_to_canonical[
+                normalized_alias
+            ] = normalized_canonical
+
+    known_terms = sorted(
+        alias_to_canonical.keys(),
+        key=lambda term: (
+            len(term.split()),
+            len(term),
+        ),
+        reverse=True,
+    )
+
+    return alias_to_canonical, known_terms
 
 
+ALIAS_TO_CANONICAL, KNOWN_TERMS = (
+    build_vocabulary_indexes()
+)
+
+
+def get_known_terms():
+    """
+    Return the known vocabulary terms without rebuilding
+    the vocabulary on every call.
+    """
+    return set(KNOWN_TERMS)
+
+
+@lru_cache(maxsize=4096)
 def get_canonical_term(term):
     normalized_term = normalize_text(term)
 
     if not normalized_term:
         return None
 
-    for canonical, aliases in grocery_vocabulary["ingredients"].items():
-        normalized_canonical = normalize_text(canonical)
-
-        for alias in aliases:
-            normalized_alias = normalize_text(alias)
-
-            if normalized_term == normalized_alias:
-                return normalized_canonical
-
-    return None
+    return ALIAS_TO_CANONICAL.get(
+        normalized_term
+    )
 
 
 def is_known_term(text):
@@ -173,41 +230,52 @@ def is_known_term(text):
     if not normalized_text:
         return False
 
-    return normalized_text in get_known_terms()
+    return (
+        normalized_text
+        in ALIAS_TO_CANONICAL
+    )
 
 
+@lru_cache(maxsize=4096)
 def find_known_terms(text):
     normalized_text = normalize_text(text)
 
     if not normalized_text:
-        return []
+        return ()
 
-    known_terms = get_known_terms()
     matches = []
 
-    for term in known_terms:
+    for term in KNOWN_TERMS:
         pattern = rf"\b{re.escape(term)}\b"
 
         if re.search(pattern, normalized_text):
             matches.append(term)
 
-    matches.sort(
-        key=lambda term: (
-            len(term.split()),
-            len(term)
-        ),
-        reverse=True
-    )
-
-    return matches
+    return tuple(matches)
 
 
+@lru_cache(maxsize=4096)
 def find_best_known_term(text):
-    matches = find_known_terms(text)
+    normalized_text = normalize_text(text)
+
+    if not normalized_text:
+        return None
+
+    # Fast path:
+    # If the whole ingredient is already a known alias,
+    # no regex searching is necessary.
+    if normalized_text in ALIAS_TO_CANONICAL:
+        return normalized_text
+
+    matches = find_known_terms(
+        normalized_text
+    )
 
     if not matches:
         return None
 
+    # KNOWN_TERMS is already ordered from the most
+    # specific term to the least specific term.
     return matches[0]
 
 
@@ -217,40 +285,88 @@ def add_to_review(text, source="unknown"):
     if not normalized_text:
         return
 
-    if find_best_known_term(normalized_text) is not None:
+    if (
+        find_best_known_term(normalized_text)
+        is not None
+    ):
         return
 
-    if normalized_text not in normalization_review:
-        normalization_review[normalized_text] = {
+    if (
+        normalized_text
+        not in normalization_review
+    ):
+        normalization_review[
+            normalized_text
+        ] = {
             "count": 1,
-            "sources": [source]
+            "sources": [source],
         }
     else:
-        normalization_review[normalized_text]["count"] += 1
+        normalization_review[
+            normalized_text
+        ]["count"] += 1
 
-        sources = normalization_review[normalized_text]["sources"]
+        sources = normalization_review[
+            normalized_text
+        ]["sources"]
 
         if source not in sources:
             sources.append(source)
 
 
 def save_review_cache():
-    save_json(REVIEW_FILE, normalization_review)
+    save_json(
+        REVIEW_FILE,
+        normalization_review,
+    )
 
 
-def add_to_cache(original_text, normalized_text):
-    original_text = clean_text(original_text)
-    normalized_text = clean_text(normalized_text)
+def clear_runtime_caches():
+    """
+    Clear cached function results.
 
-    if not original_text or not normalized_text:
+    This is useful if normalization rules are changed
+    while the Python process is still running.
+    """
+    normalize_text.cache_clear()
+    get_canonical_term.cache_clear()
+    find_known_terms.cache_clear()
+    find_best_known_term.cache_clear()
+
+
+def add_to_cache(
+    original_text,
+    normalized_text,
+):
+    original_text = clean_text(
+        original_text
+    )
+    normalized_text = clean_text(
+        normalized_text
+    )
+
+    if (
+        not original_text
+        or not normalized_text
+    ):
         return
 
-    normalization_cache[original_text] = normalized_text
-    save_json(CACHE_FILE, normalization_cache)
+    normalization_cache[
+        original_text
+    ] = normalized_text
+
+    save_json(
+        CACHE_FILE,
+        normalization_cache,
+    )
+
+    # Our normalization behavior changed, so cached
+    # function results may no longer be valid.
+    clear_runtime_caches()
 
     review_keys = {
         original_text,
-        normalize_text(original_text)
+        normalize_text(original_text),
     }
 
     review_changed = False
@@ -264,7 +380,11 @@ def add_to_cache(original_text, normalized_text):
         save_review_cache()
 
 
-def analyze_text(text, source="unknown", review_unknown=True):
+def analyze_text(
+    text,
+    source="unknown",
+    review_unknown=True,
+):
     normalized_text = normalize_text(text)
 
     if not normalized_text:
@@ -273,30 +393,45 @@ def analyze_text(text, source="unknown", review_unknown=True):
             "normalized": "",
             "matched_term": None,
             "canonical": None,
-            "recognized": False
+            "recognized": False,
         }
 
-    matched_term = find_best_known_term(normalized_text)
-    canonical = get_canonical_term(matched_term)
+    matched_term = find_best_known_term(
+        normalized_text
+    )
+
+    canonical = get_canonical_term(
+        matched_term
+    )
+
     recognized = matched_term is not None
 
-    if not recognized and review_unknown:
-        add_to_review(normalized_text, source)
+    if (
+        not recognized
+        and review_unknown
+    ):
+        add_to_review(
+            normalized_text,
+            source,
+        )
 
     return {
         "original": text,
         "normalized": normalized_text,
         "matched_term": matched_term,
         "canonical": canonical,
-        "recognized": recognized
+        "recognized": recognized,
     }
 
 
-def normalize_and_review(text, source="unknown"):
+def normalize_and_review(
+    text,
+    source="unknown",
+):
     analysis = analyze_text(
         text,
         source=source,
-        review_unknown=True
+        review_unknown=True,
     )
 
     return analysis["normalized"]
