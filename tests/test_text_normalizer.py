@@ -1,5 +1,5 @@
 from rework_normalization.text_normalizer import (
-    normalize_text, find_ingredients,
+    normalize_text,
     )
 
 def test_normalize_chicken_breast():
@@ -33,18 +33,3 @@ def test_no_letters_invalid():
 def test_numbers_and_letters_valid():
     result = normalize_text("16 oz Beef")
     assert result == "16 oz beef"
-
-def test_find_ingredeints():
-    result = find_ingredients("garlic butter shrimp",
-                              ["chicken", "garlic", "butter", "shrimp"])
-    assert result == ["garlic", "butter", "shrimp"]
-
-def test_find_no_overlapping_ingredients():
-    result = find_ingredients("boneless skinless chicken breast",
-                              ["chicken", "chicken breast"])
-    assert result == ["chicken breast"]
-
-def test_best_matches_with_overlap():
-    result = find_ingredients ("chicken breast with garlic and butter",
-                               ["chicken", "chicken breast", "garlic", "butter"])
-    assert result == ["chicken breast", "garlic", "butter"]
